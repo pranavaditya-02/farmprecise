@@ -1,159 +1,15 @@
+import 'package:farmprecise/Ip.dart';
+import 'package:farmprecise/components/bottom_navigation.dart';
+import 'package:farmprecise/components/custom_appbar.dart';
+import 'package:farmprecise/components/custom_drawer.dart';
+import 'package:farmprecise/pages/cropcalendar.dart';
+import 'package:farmprecise/pages/cropscannner.dart';
+import 'package:farmprecise/pages/dronedetails.dart';
+import 'package:farmprecise/pages/homepage.dart';
+import 'package:farmprecise/pages/rentpage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
-import 'package:farmprecise/dashboard/dashboard.dart';
-import 'package:farmprecise/pages/homepage.dart';
-
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: Colors.green,
-        hintColor: Colors.greenAccent,
-        scaffoldBackgroundColor: Colors.lightGreen[300],
-        textTheme: TextTheme(
-          bodyLarge: TextStyle(color: Colors.black),
-          bodyMedium: TextStyle(color: Colors.black54),
-        ),
-      ),
-      home: Dashboard(),
-    );
-  }
-}
-
-class Dashboard extends StatefulWidget {
-  @override
-  _DashboardState createState() => _DashboardState();
-}
-
-class _DashboardState extends State<Dashboard> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _pages = [
-    HomePage(),
-    CommunityScreen(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.green,
-        centerTitle: true,
-        title: Text(
-          'Farm Precise',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        automaticallyImplyLeading: true,
-      ),
-      drawer: Drawer(
-        child: Container(
-          color: Colors.white,
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: <Widget>[
-              UserAccountsDrawerHeader(
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                ),
-                accountName: Text(
-                  'John Doe',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                  ),
-                ),
-                accountEmail: Text(
-                  'john.doe@example.com',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
-                currentAccountPicture: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: Text(
-                    'JD',
-                    style: TextStyle(
-                      fontSize: 24.0,
-                      color: Colors.green,
-                    ),
-                  ),
-                ),
-              ),
-              ListTile(
-                leading: Icon(Icons.home, color: Colors.green),
-                title: Text('Home'),
-                onTap: () {
-                  _onItemTapped(0);
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.people, color: Colors.green),
-                title: Text('Community'),
-                onTap: () {
-                  _onItemTapped(2);
-                  Navigator.pop(context);
-                },
-              ),
-              Divider(),
-              ListTile(
-                leading: Icon(Icons.logout, color: Colors.green),
-                title: Text('Logout'),
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => Started()),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.green,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white.withOpacity(0.7),
-        selectedFontSize: 14.0,
-        unselectedFontSize: 14.0,
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          
-          
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Community',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
-    );
-  }
-}
 
 class CommunityScreen extends StatefulWidget {
   @override
@@ -163,6 +19,13 @@ class CommunityScreen extends StatefulWidget {
 class _CommunityScreenState extends State<CommunityScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<PostItem> _posts = [];
+  int _selectedIndex = 0;
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index; // Update the selected index
+    });
+  }
+
   List<PostItem> _filteredPosts = [];
 
   @override
@@ -173,7 +36,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   void _fetchPosts() async {
     final response =
-        await http.get(Uri.parse('http://10.11.255.10:3000/community'));
+        await http.get(Uri.parse('http://$ipaddress:3000/community'));
 
     if (response.statusCode == 200) {
       final List<dynamic> postsJson = json.decode(response.body);
@@ -184,7 +47,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   date: post['DATE'],
                   title: post['TITLE'],
                   content: post['CONTENT'],
-                  commentsCount: 0, // Assuming comments count is not available
+                  commentsCount: 0,
                 ))
             .toList();
         _filteredPosts = _posts;
@@ -208,7 +71,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   void _addNewPost(String username, String title, String content) async {
     final date = DateTime.now().toIso8601String().substring(0, 10);
     final response = await http.post(
-      Uri.parse('http://10.11.255.10:3000/community'),
+      Uri.parse('http://$ipaddress:3000/community'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
       },
@@ -239,6 +102,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: const CustomAppBar(),
+      drawer: CustomDrawer(onItemTapped: _onItemTapped),
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
         child: Column(
@@ -326,6 +191,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
           Icons.add,
           color: Colors.white,
         ),
+      ),
+      bottomNavigationBar: CustomBottomNavigationBar(
+        selectedIndex: 2,
+        onItemTapped: _onItemTapped, // Handle bottom nav item taps
       ),
     );
   }
