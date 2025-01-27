@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:farmprecise/Ip.dart';
 import 'package:farmprecise/pages/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -44,7 +45,7 @@ class _SignupPageState extends State<SignupPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://10.11.255.10:3000/signup'),
+        Uri.parse('http://$ipaddress:3000/signup'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'USERNAME': _usernameController.text,
@@ -231,7 +232,7 @@ class _SignupPageState extends State<SignupPage> {
                 child: ElevatedButton.icon(
                   onPressed: () {},
                   icon: Image.network(
-                    'https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/google-icon.png',
+                    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS78fWMyZTFLKJ9OlVW-1sKiiZWP2A8BHfUnw&s',
                     height: 18.0,
                   ),
                   label: Text('Continue with Google'),

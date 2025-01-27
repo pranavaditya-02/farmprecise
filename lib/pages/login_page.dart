@@ -1,23 +1,13 @@
 // Remove any references to email in the Flutter login screen code
+import 'package:farmprecise/Ip.dart';
+import 'package:farmprecise/pages/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'signup_page.dart';
 import 'package:farmprecise/dashboard/dashboard.dart';
 
-void main() {
-  runApp(MyApp());
-}
 
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: LoginScreen(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -35,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    final Uri url = Uri.parse('http://10.11.255.10:3000/login');
+    final Uri url = Uri.parse('http://$ipaddress:3000/login');
 
     try {
       final response = await http.post(
@@ -52,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         // Successful login
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => Dashboard()),
+          MaterialPageRoute(builder: (context) => HomePage()),
         );
       } else if (response.statusCode == 401) {
         // Invalid credentials
@@ -197,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _buildSocialButton(
-                      'https://image.similarpng.com/very-thumbnail/2020/06/Logo-google-icon-PNG.png'),
+                      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS78fWMyZTFLKJ9OlVW-1sKiiZWP2A8BHfUnw&s'),
                   SizedBox(width: 24.0),
                   _buildSocialButton(
                       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/135px-Apple_logo_black.svg.png'),

@@ -1,104 +1,124 @@
+import 'dart:async';
+import 'package:farmprecise/dashboard/farmercommunity.dart';
+import 'package:farmprecise/pages/cropcalendar.dart';
+import 'package:farmprecise/pages/cropscannner.dart';
+import 'package:farmprecise/pages/dronedetails.dart';
+import 'package:farmprecise/pages/rentpage.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:farmprecise/components/custom_appbar.dart';
+import 'package:farmprecise/components/custom_drawer.dart';
+import 'package:farmprecise/components/bottom_navigation.dart';
 
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
+class HomePage extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: Color(0xFF06D001),
-        hintColor: Color(0xFF9BEC00),
-        scaffoldBackgroundColor: Colors.white,
-        textTheme: TextTheme(
-          bodyLarge: TextStyle(color: Colors.black),
-          bodyMedium: TextStyle(color: Colors.black54),
-        ),
-      ),
-      home: Dashboard(),
-    );
-  }
+  _HomePageState createState() => _HomePageState();
 }
 
-class Dashboard extends StatefulWidget {
-  @override
-  _DashboardState createState() => _DashboardState();
-}
+class _HomePageState extends State<HomePage> {
+  String temperature = '';
+  String humidity = '';
+  String windSpeed = '';
+  String location = '';
+  String conditionText = '';
+  String conditionIconUrl = '';
 
-class _DashboardState extends State<Dashboard> {
+  final String light = 'Light';
+  String rainfall = '';
+  final String soilMoisture = '65%';
+  final String fire = 'No fire';
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
     HomePage(),
-    ListPage(),
-    ProfilePage(),
+    CropScannerScreen(),
+    CommunityScreen(),
+    RentProductsForm(),
+    CropSuggestionsPage(),
+    RentProductsForm(),
+    DroneMonitoringScreen(),
   ];
-
   void _onItemTapped(int index) {
     setState(() {
-      _selectedIndex = index;
+      _selectedIndex = index; // Update the selected index
+    });
+  }
+
+  Timer? _timer; // Timer instance
+
+  @override
+  void initState() {
+    super.initState();
+    fetchWeatherData();
+    // Set up a timer to fetch data every 60 seconds
+    _timer = Timer.periodic(Duration(seconds: 60), (Timer timer) {
+      fetchWeatherData();
     });
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Color(0xFF06D001),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home, color: Colors.white),
-            label: '',
+  void dispose() {
+    _timer?.cancel(); // Cancel the timer when the widget is disposed
+    super.dispose();
+  }
+
+  Future<void> fetchWeatherData() async {
+    final response = await http.get(Uri.parse(
+        'http://api.weatherapi.com/v1/current.json?key=2a78e81f9890453aaf4122524252301&q=11.4979484,77.2782678'));
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      setState(() {
+        temperature = '${data['current']['temp_c']}°C';
+        humidity = '${data['current']['humidity']}%';
+        windSpeed = '${data['current']['wind_kph'].toStringAsFixed(1)} km/h';
+        location =
+            '${data['location']['name'].toLowerCase()}, ${data['location']['region'].toLowerCase()}';
+        conditionText = data['current']['condition']['text'];
+        conditionIconUrl = 'http:${data['current']['condition']['icon']}';
+        rainfall = '${data['current']['precip_mm']} mm';
+      });
+    } else {
+      throw Exception('Failed to load weather data');
+    }
+  }
+
+  Widget _buildWeatherInfo(String label, String value, IconData icon) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white, width: 1),
+        borderRadius: BorderRadius.circular(8),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF9BEC00), Color(0xFF06D001)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white, size: 28),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 18),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list, color: Colors.white),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person, color: Colors.white),
-            label: '',
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(color: Colors.white, fontSize: 16),
           ),
         ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
       ),
     );
   }
-}
 
-class ListPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: const Text(
-        'List Page',
-        style: TextStyle(color: Colors.black, fontSize: 24),
-      ),
-    );
-  }
-}
-
-class ProfilePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: const Text(
-        'Profile Page',
-        style: TextStyle(color: Colors.black, fontSize: 24),
-      ),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      appBar: const CustomAppBar(),
+      drawer: CustomDrawer(onItemTapped: _onItemTapped),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,18 +153,36 @@ class HomePage extends StatelessWidget {
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
+                    children: [
                       Text(
-                        '24°C',
-                        style: TextStyle(color: Colors.white, fontSize: 32),
+                        temperature.isNotEmpty ? temperature : 'Loading...',
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 24),
                       ),
-                      Icon(Icons.cloud, color: Colors.white, size: 32),
+                      Row(
+                        children: [
+                          Image.network(
+                              conditionIconUrl.isNotEmpty
+                                  ? conditionIconUrl
+                                  : 'https://via.placeholder.com/32',
+                              width: 32,
+                              height: 32),
+                          const SizedBox(width: 8),
+                          Text(
+                            conditionText.isNotEmpty
+                                ? conditionText
+                                : 'Loading...',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 16),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Partly sunny',
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                  Text(
+                    location.isNotEmpty ? location : 'Loading...',
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
                   const SizedBox(height: 16),
                   Column(
@@ -155,17 +193,21 @@ class HomePage extends StatelessWidget {
                         children: [
                           Expanded(
                             child: _buildWeatherInfo(
-                                'Light', 'Medium', Icons.lightbulb),
+                                light, 'Medium', Icons.lightbulb),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: _buildWeatherInfo(
-                                'Humidity', '42%', Icons.water_drop),
+                                'Humidity',
+                                humidity.isNotEmpty ? humidity : 'Loading...',
+                                Icons.water_drop),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: _buildWeatherInfo(
-                                'Rainfall', '10mm', Icons.grain),
+                                'Rainfall',
+                                rainfall.isNotEmpty ? rainfall : 'Loading...',
+                                Icons.grain),
                           ),
                         ],
                       ),
@@ -180,12 +222,14 @@ class HomePage extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: _buildWeatherInfo(
-                                'Fire', 'No fire', Icons.local_fire_department),
+                                fire, 'No fire', Icons.local_fire_department),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child:
-                                _buildWeatherInfo('Wind', '4 km/h', Icons.air),
+                            child: _buildWeatherInfo(
+                                'Wind',
+                                windSpeed.isNotEmpty ? windSpeed : 'Loading...',
+                                Icons.air),
                           ),
                         ],
                       ),
@@ -258,54 +302,9 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  static Widget _buildWeatherInfo(String label, String value, IconData icon) {
-    // Define the order of weather information
-    List<String> weatherLabels = [
-      'Light', // Moved "Light" to the first position
-      'Humidity',
-      'Rainfall',
-      'CO2',
-      'Fire',
-      'Wind',
-      'Soil Moisture', // Moved "Soil Moisture" to the last position
-    ];
-
-    // Check if the label is in the desired order
-    if (!weatherLabels.contains(label)) {
-      return Container();
-    }
-
-    // Get the index of the label in the list
-    int index = weatherLabels.indexOf(label);
-
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.white, width: 1),
-        borderRadius: BorderRadius.circular(8),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF9BEC00), Color(0xFF06D001)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      padding: const EdgeInsets.all(8),
-      child: Column(
-        children: [
-          Icon(icon, color: Colors.white, size: 28),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white70, fontSize: 18),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(color: Colors.white, fontSize: 20),
-          ),
-        ],
+      bottomNavigationBar: CustomBottomNavigationBar(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped, // Handle bottom nav item taps
       ),
     );
   }
@@ -321,8 +320,8 @@ class HomePage extends StatelessWidget {
       child: ListTile(
         leading: Image.network(
           imageUrl,
-          width: 80, // Adjusted image width
-          height: 80, // Adjusted image height
+          width: 80,
+          height: 80,
           fit: BoxFit.cover,
         ),
         title: Text(

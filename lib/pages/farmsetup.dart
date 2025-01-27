@@ -1,4 +1,6 @@
+import 'package:farmprecise/Ip.dart';
 import 'package:farmprecise/dashboard/dashboard.dart';
+import 'package:farmprecise/pages/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -20,7 +22,6 @@ class _FarmSetupFormState extends State<FarmSetupForm> {
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // Prepare data to send
       var data = {
         'FARMERNAME': _farmerNameController.text,
         'LOCALITY': _localityController.text,
@@ -31,8 +32,7 @@ class _FarmSetupFormState extends State<FarmSetupForm> {
         'PASTCROP': _pastCropController.text,
       };
 
-      // Send data to server
-      var url = Uri.parse('http://10.11.255.10:3000/farmsetup');
+      var url = Uri.parse('http://$ipaddress:3000/farmsetup');
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -52,7 +52,7 @@ class _FarmSetupFormState extends State<FarmSetupForm> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => Dashboard()),
+                      MaterialPageRoute(builder: (context) => HomePage()),
                     );
                   },
                 ),

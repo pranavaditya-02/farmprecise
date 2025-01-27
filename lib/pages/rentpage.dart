@@ -1,4 +1,7 @@
+import 'package:farmprecise/pages/homepage.dart';
 import 'package:flutter/material.dart';
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:farmprecise/dashboard/dashboard.dart';
 
 class RentProductsForm extends StatefulWidget {
   @override
@@ -20,6 +23,13 @@ class _RentProductsFormState extends State<RentProductsForm> {
     'Drone for Precision Agriculture'
   ];
 
+  // List of image URLs for the carousel
+  final List<String> _imageUrls = [
+    'https://cactilandscape.com/wp-content/uploads/2024/07/Smart-Irrigation-Systems-scaled.jpeg',
+    'https://vst.co.jp/wp-content/uploads/2023/12/automatic-weeding-machine.jpeg',
+    'https://www.bearingtips.com/wp-content/uploads/2021/06/SMB320-Agricultural-drone.jpg',
+  ];
+
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
       // If all fields are valid, show a success dialog
@@ -37,8 +47,10 @@ class _RentProductsFormState extends State<RentProductsForm> {
             actions: [
               TextButton(
                 onPressed: () {
-                 
-                  Navigator.of(context).pop();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomePage()),
+                  );
                 },
                 child: Text('OK'),
               ),
@@ -55,37 +67,58 @@ class _RentProductsFormState extends State<RentProductsForm> {
       appBar: AppBar(
         title: Text(
           'Rent Products',
-          style: TextStyle(color: Colors.white), 
+          style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.green,
-        centerTitle: true, 
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.0), 
+        padding: EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Network Image
-              Image.network(
-                'https://www.stability.co/wp-content/uploads/2020/05/iot-agriculture-1-1-768x430-624x349-1.jpg',
-                height: 200.0,
-                fit: BoxFit.cover,
+              // Image Carousel
+              CarouselSlider(
+                options: CarouselOptions(
+                  height: 200.0,
+                  autoPlay: true,
+                  autoPlayInterval: Duration(seconds: 2),
+                  enlargeCenterPage: true,
+                  aspectRatio: 1 / 1,
+                  viewportFraction: 0.8,
+                ),
+                items: _imageUrls.map((url) {
+                  return Builder(
+                    builder: (BuildContext context) {
+                      return Container(
+                        width: MediaQuery.of(context).size.width,
+                        margin: EdgeInsets.symmetric(horizontal: 5.0),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10.0),
+                          image: DecorationImage(
+                            image: NetworkImage(url),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }).toList(),
               ),
               SizedBox(height: 20.0),
 
-             
               DropdownButtonFormField<String>(
                 value: _selectedProduct,
-                isExpanded: true, 
+                isExpanded: true,
                 items: _products.map((product) {
                   return DropdownMenuItem<String>(
                     value: product,
                     child: Flexible(
                       child: Text(
                         product,
-                        overflow: TextOverflow.ellipsis, 
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   );
@@ -192,7 +225,6 @@ class _RentProductsFormState extends State<RentProductsForm> {
               ),
               SizedBox(height: 20.0),
 
-             
               ElevatedButton(
                 onPressed: _submitForm,
                 child: Text(

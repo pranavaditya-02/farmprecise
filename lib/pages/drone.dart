@@ -1,31 +1,21 @@
+import 'package:farmprecise/pages/dronedetails.dart';
 import 'package:flutter/material.dart';
-
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: AirDroneDetailScreen(),
-    );
-  }
-}
 
 class AirDroneDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF023047), // Background color
+      backgroundColor: Color.fromARGB(255, 1, 62, 63), // Background color
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            // Handle back button press
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => DroneMonitoringScreen()),
+            );
           },
         ),
         title: Text('Airdrone Detail', style: TextStyle(color: Colors.white)),
@@ -37,7 +27,7 @@ class AirDroneDetailScreen extends StatelessWidget {
           child: Column(
             children: [
               Card(
-                color: Color(0xFF669BBC),
+                color: Colors.transparent,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),

@@ -1,3 +1,5 @@
+import 'package:farmprecise/dashboard/dashboard.dart';
+import 'package:farmprecise/pages/homepage.dart';
 import 'package:flutter/material.dart';
 
 class CropSuggestionsPage extends StatefulWidget {
@@ -57,7 +59,7 @@ class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(2020),
-      lastDate: DateTime(2025),
+      lastDate: DateTime(2026),
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {
@@ -118,8 +120,10 @@ class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.of(context)
-                .pop(); // Navigate back to the previous screen (homepage)
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => HomePage()),
+            );
           },
         ),
       ),
