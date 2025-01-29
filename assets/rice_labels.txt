@@ -1,0 +1,11 @@
+0 Paddy_Bacterial_Leaf_Blight
+1 Paddy_Brown_Spot
+2 Paddy_Healthy
+3 Paddy_Leaf_Blast
+4 Paddy_Leaf_scald
+5 Paddy_Sheath_Blight
+6 Paddy_Tungro
+7 Human_Men
+8 Human_Women
+9 Vehicle
+10 Weeds

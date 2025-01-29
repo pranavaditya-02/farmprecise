@@ -1,4 +1,4 @@
-package com.example.farmprecise
+package com.farm.farmprecise
 
 import io.flutter.embedding.android.FlutterActivity
 
