@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:tflite_v2/tflite_v2.dart';
 import 'package:farmprecise/components/bottom_navigation.dart';
 import 'package:farmprecise/components/custom_appbar.dart';
 import 'package:farmprecise/components/custom_drawer.dart';
@@ -11,10 +12,90 @@ class CropScannerScreen extends StatefulWidget {
 }
 
 class _CropScannerScreenState extends State<CropScannerScreen> {
-  final List<File> _selectedImages = [];
+  File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
   Map<String, String>? _diseaseData;
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadModel();
+  }
+
+  /// Load the TFLite model
+  Future<void> _loadModel() async {
+    Tflite.close();
+    try {
+      String? result = await Tflite.loadModel(
+        model: "assets/cotton_model.tflite",
+        labels: "assets/cotton_labels.txt",
+      );
+      print(result);
+      if (result != null) {
+        print("Model loaded successfully: $result");
+      } else {
+        print("Failed to load model.");
+      }
+    } catch (e) {
+      print("failed to load image : $e");
+    }
+  }
+
+  /// Dispose of TFLite resources
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  /// Predict the disease based on the image
+  Future<void> _predictDisease(File image) async {
+    try {
+      // Running the model on the input image
+      var recognitions = await Tflite.runModelOnImage(
+        path: image.path, // Path to the image
+        imageMean: 0.0, // Default normalization
+        imageStd: 255.0, // Default normalization
+        numResults: 5, // Maximum number of predictions
+        threshold: 0.5, // Confidence threshold
+        asynch: true,
+      );
+
+      if (recognitions != null && recognitions.isNotEmpty) {
+        // Format the output
+        var formattedData = recognitions.map((recognition) {
+          return {
+            'index':
+                recognition['index'] ?? -1, // Default to -1 if index is missing
+            'label': recognition['label'] ?? 'Unknown',
+            'confidence': recognition['confidence'] ?? 0.0,
+          };
+        }).toList();
+
+        // Logging formatted data
+        print("Formatted data: $formattedData");
+
+        setState(() {
+          // Assuming we display the first recognition result for simplicity
+          _diseaseData = {
+            'Index': formattedData[0]['index'].toString(),
+            'Disease Name': formattedData[0]['label'],
+            'Confidence':
+                (formattedData[0]['confidence'] * 100).toStringAsFixed(2) + '%',
+          };
+        });
+      } else {
+        setState(() {
+          _diseaseData = {'Disease Name': 'Unknown', 'Confidence': 'N/A'};
+        });
+      }
+    } catch (e) {
+      print("Error while predicting disease: $e");
+      setState(() {
+        _diseaseData = {'Disease Name': 'Error', 'Confidence': 'N/A'};
+      });
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -22,48 +103,33 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
     });
   }
 
+  /// Pick an image from the gallery or camera
   Future<void> _pickImage(ImageSource source) async {
-    if (_selectedImages.length >= 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('You can upload a maximum of 5 images.')),
-      );
-      return;
-    }
-
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
-      setState(() {
-        _selectedImages.add(File(pickedFile.path));
-        _diseaseData = null; // Reset disease data when a new image is picked
-      });
+      File image = File(pickedFile.path);
+      if (await image.exists()) {
+        print("Image exists at path: ${image.path}");
+        setState(() {
+          _selectedImage = image;
+          _diseaseData = null; // Reset disease data when a new image is picked
+        });
+      } else {
+        print("Image does not exist at path: ${image.path}");
+      }
     }
   }
 
-  void _submitImages() {
-    if (_selectedImages.length < 3) {
+  /// Submit image for prediction
+  void _submitImage() async {
+    if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please select at least 3 images.')),
+        SnackBar(content: Text('Please select an image first.')),
       );
       return;
     }
 
-    setState(() {
-      // Simulate disease detection (You can replace this with real logic)
-      _diseaseData = {
-        'Disease Name': 'Bacterial Leaf Blight',
-        'Cause':
-            'Caused by the bacterium Xanthomonas oryzae, which infects the plant tissue and leads to leaf lesions.',
-        'Details': 'Bacterial leaf blight is caused by Xanthomonas oryzae.',
-        'Solutions (Traditional)':
-            'Use resistant varieties, ensure proper drainage, and avoid over-irrigation.',
-        'Solutions (Modern)':
-            'Use copper-based bactericides and adopt AI-based disease monitoring systems.',
-        'Recommended Manures': 'Cow dung compost, green manure.',
-        'Recommended Fertilizers': 'Nitrogen-rich fertilizers like urea.',
-        'Additional Info':
-            'Commonly affects paddy crops during humid conditions. It spreads through water splashes and infected seeds.',
-      };
-    });
+    await _predictDisease(_selectedImage!);
   }
 
   @override
@@ -79,7 +145,7 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
             children: [
               Center(
                 child: Text(
-                  'Upload Photos to Detect Crop Diseases',
+                  'Upload a Photo to Detect Crop Diseases',
                   style: TextStyle(
                     fontSize: 18.0,
                     fontWeight: FontWeight.bold,
@@ -88,38 +154,14 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
                 ),
               ),
               SizedBox(height: 20.0),
-              _selectedImages.isNotEmpty
-                  ? Wrap(
-                      spacing: 8.0,
-                      runSpacing: 8.0,
-                      alignment: WrapAlignment.center,
-                      children: _selectedImages.map((image) {
-                        return Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8.0),
-                              child: Image.file(
-                                image,
-                                height: 100,
-                                width: 100,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: IconButton(
-                                icon: Icon(Icons.close, color: Colors.red),
-                                onPressed: () {
-                                  setState(() {
-                                    _selectedImages.remove(image);
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        );
-                      }).toList(),
+              _selectedImage != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8.0),
+                      child: Image.file(
+                        _selectedImage!,
+                        height: 200,
+                        fit: BoxFit.cover,
+                      ),
                     )
                   : Container(
                       height: 200,
@@ -129,7 +171,7 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          'No Images Selected',
+                          'No Image Selected',
                           style: TextStyle(color: Colors.grey[600]),
                         ),
                       ),
@@ -146,9 +188,7 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
                     ),
                     label: Text(
                       'Camera',
-                      style: TextStyle(
-                          color:
-                              Colors.green), // Set the desired text color here
+                      style: TextStyle(color: Colors.green),
                     ),
                   ),
                   ElevatedButton.icon(
@@ -159,20 +199,18 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
                     ),
                     label: Text(
                       'Gallery',
-                      style: TextStyle(
-                          color:
-                              Colors.green), // Set the desired text color here
+                      style: TextStyle(color: Colors.green),
                     ),
                   ),
                 ],
               ),
               SizedBox(height: 20.0),
               ElevatedButton(
-                onPressed: _submitImages,
+                onPressed: _submitImage,
                 child: Text('Submit'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green, // Button background color
-                  foregroundColor: Colors.white, // Text color
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
                 ),
               ),
               SizedBox(height: 20.0),
@@ -208,14 +246,10 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
                                         fontSize: 16.0,
                                       ),
                                     ),
-                                    SizedBox(
-                                        height:
-                                            4.0), // Add spacing between key and value
+                                    SizedBox(height: 4.0),
                                     Text(
                                       entry.value,
-                                      style: TextStyle(
-                                        fontSize: 16.0,
-                                      ),
+                                      style: TextStyle(fontSize: 16.0),
                                     ),
                                   ],
                                 ),
