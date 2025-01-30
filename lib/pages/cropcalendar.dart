@@ -14,7 +14,7 @@ class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
   final List<Map<String, String>> _crops = [
     {
       'name': 'Asparagus',
-      'harvest': 'Harvest on Oct 5, 2022',
+      'harvest': 'Harvest on Oct 5, 2025',
       'waterNeeded': '1 inch per week',
       'fertilizer': 'Compost',
       'image':
@@ -22,7 +22,7 @@ class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
     },
     {
       'name': 'Tomato',
-      'harvest': 'Harvest on Nov 12, 2022',
+      'harvest': 'Harvest on Nov 12, 2025',
       'waterNeeded': '2 inches per week',
       'fertilizer': 'NPK 10-10-10',
       'image':
@@ -30,7 +30,7 @@ class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
     },
     {
       'name': 'Carrot',
-      'harvest': 'Harvest on Dec 15, 2022',
+      'harvest': 'Harvest on Dec 15, 2025',
       'waterNeeded': '1 inch per week',
       'fertilizer': 'Compost',
       'image':
@@ -38,7 +38,7 @@ class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
     },
     {
       'name': 'Lettuce',
-      'harvest': 'Harvest on Jan 20, 2023',
+      'harvest': 'Harvest on Jan 20, 2025',
       'waterNeeded': '1.5 inches per week',
       'fertilizer': 'NPK 10-10-10',
       'image':
@@ -46,7 +46,7 @@ class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
     },
     {
       'name': 'Cucumber',
-      'harvest': 'Harvest on Feb 25, 2023',
+      'harvest': 'Harvest on Feb 25, 2025',
       'waterNeeded': '1 inch per week',
       'fertilizer': 'Compost',
       'image':
