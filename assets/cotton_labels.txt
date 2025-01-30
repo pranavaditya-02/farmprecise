@@ -1,12 +1,12 @@
-0 Cotton_Aphids
-1 Cotton_Army_worm
-2 Cotton_Bacterial_blight
-3 Cotton_Cotton_Boll_Rot
-4 Cotton_Green_Cotton_Boll
-5 Cotton_Healthy
-6 Cotton_Powdery_mildew
-7 Cotton_Target_spot
-8 Human_Men
-9 Human_Women
-10 Vehicle
-11 Weeds
+Cotton_Aphids
+Cotton_Army_worm
+Cotton_Bacterial_blight
+Cotton_Cotton_Boll_Rot
+Cotton_Green_Cotton_Boll
+Cotton_Healthy
+Cotton_Powdery_mildew
+Cotton_Target_spot
+Human_Men
+Human_Women
+Vehicle
+Weeds

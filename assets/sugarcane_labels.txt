@@ -1,10 +1,10 @@
-0 SugarCane_BacterialBlights
-1 SugarCane_Healthy
-2 SugarCane_Mosaic
-3 SugarCane_RedRot
-4 SugarCane_Rust
-5 SugarCane_Yellow
-6 Human_Men
-7 Human_Women
-8 Vehicle
-9 Weeds
+SugarCane_BacterialBlights
+SugarCane_Healthy
+SugarCane_Mosaic
+SugarCane_RedRot
+SugarCane_Rust
+SugarCane_Yellow
+Human_Men
+Human_Women
+Vehicle
+Weeds
