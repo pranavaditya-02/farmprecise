@@ -209,7 +209,7 @@ class _SignupPageState extends State<SignupPage> {
                       child: ElevatedButton(
                         onPressed: _signup,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF06D001),
+                          backgroundColor: Colors.green,
                         ),
                         child: Text(
                           'Sign up',
@@ -307,7 +307,7 @@ class _SignupPageState extends State<SignupPage> {
                     child: Text(
                       'Login',
                       style: TextStyle(
-                        color: Color(0xFF06D001),
+                        color: Colors.green,
                       ),
                     ),
                   ),

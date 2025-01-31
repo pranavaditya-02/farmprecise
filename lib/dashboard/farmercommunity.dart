@@ -237,6 +237,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
               ),
               child: Text('Add', style: TextStyle(color: Colors.white)),
             ),

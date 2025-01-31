@@ -7,8 +7,6 @@ import 'dart:convert';
 import 'signup_page.dart';
 import 'package:farmprecise/dashboard/dashboard.dart';
 
-
-
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -148,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Text(
                       'Forgot password?',
                       style: TextStyle(
-                        color: Color(0xFF06D001),
+                        color: Colors.green,
                       ),
                     ),
                   ),
@@ -170,8 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF06D001),
-                        ),
+                            backgroundColor: Colors.green),
                       ),
                     ),
               SizedBox(height: 8.0),
@@ -187,13 +184,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _buildSocialButton(
-                      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS78fWMyZTFLKJ9OlVW-1sKiiZWP2A8BHfUnw&s'),
+                      'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png'),
                   SizedBox(width: 24.0),
                   _buildSocialButton(
                       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/135px-Apple_logo_black.svg.png'),
                   SizedBox(width: 24.0),
                   _buildSocialButton(
-                      'https://www.clipartmax.com/png/small/240-2409514_login-icon-png-single-sign-on-icon.png'),
+                      'https://nordicscreen.com/wp-content/uploads/2023/01/Single-Sign-On-logo.webp'),
                   SizedBox(width: 24.0),
                   _buildSocialButton(
                       'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/2023_Facebook_icon.svg/75px-2023_Facebook_icon.svg.png'),
@@ -214,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Text(
                       'Sign up',
                       style: TextStyle(
-                        color: Color(0xFF06D001),
+                        color: Colors.green,
                       ),
                     ),
                   ),

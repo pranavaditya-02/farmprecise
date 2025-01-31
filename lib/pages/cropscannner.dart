@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -15,7 +14,6 @@ class CropScannerScreen extends StatefulWidget {
 }
 
 class _CropScannerScreenState extends State<CropScannerScreen> {
-  // Map<String, dynamic>? _diseaseDetails;
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
   Map<String, String>? _diseaseData;
@@ -48,7 +46,7 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
   @override
   void initState() {
     super.initState();
-    _loadModel(_selectedCrop); // Load default model (Cotton)
+    _loadModel(_selectedCrop); 
 
     _loadDiseaseDetails();
   }

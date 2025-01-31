@@ -1,6 +1,10 @@
-import 'package:farmprecise/dashboard/dashboard.dart';
-import 'package:farmprecise/pages/homepage.dart';
+import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:farmprecise/pages/homepage.dart';
+import 'package:farmprecise/Ip.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 class CropSuggestionsPage extends StatefulWidget {
   @override
@@ -8,85 +12,65 @@ class CropSuggestionsPage extends StatefulWidget {
 }
 
 class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
-  DateTime? _selectedDate;
   String _searchQuery = '';
+  List<Map<String, dynamic>> _crops = [];
+  bool _isLoading = true;
 
-  final List<Map<String, String>> _crops = [
-    {
-      'name': 'Asparagus',
-      'harvest': 'Harvest on Oct 5, 2025',
-      'waterNeeded': '1 inch per week',
-      'fertilizer': 'Compost',
-      'image':
-          'https://idsb.tmgrup.com.tr/ly/uploads/images/2021/08/03/133396.jpeg',
-    },
-    {
-      'name': 'Tomato',
-      'harvest': 'Harvest on Nov 12, 2025',
-      'waterNeeded': '2 inches per week',
-      'fertilizer': 'NPK 10-10-10',
-      'image':
-          'https://blog.lexmed.com/images/librariesprovider80/blog-post-featured-images/shutterstock_1896755260.jpg?sfvrsn=52546e0a_0',
-    },
-    {
-      'name': 'Carrot',
-      'harvest': 'Harvest on Dec 15, 2025',
-      'waterNeeded': '1 inch per week',
-      'fertilizer': 'Compost',
-      'image':
-          'https://strapi.myplantin.com/Depositphotos_118413036_L_min_0123b119ba.webp',
-    },
-    {
-      'name': 'Lettuce',
-      'harvest': 'Harvest on Jan 20, 2025',
-      'waterNeeded': '1.5 inches per week',
-      'fertilizer': 'NPK 10-10-10',
-      'image':
-          'https://www.allthatgrows.in/cdn/shop/articles/Feat_Image-Lettuce_1024x1024.jpg?v=1565168838',
-    },
-    {
-      'name': 'Cucumber',
-      'harvest': 'Harvest on Feb 25, 2025',
-      'waterNeeded': '1 inch per week',
-      'fertilizer': 'Compost',
-      'image':
-          'https://www.highmowingseeds.com/media/catalog/product/cache/6cbdb003cf4aae33b9be8e6a6cf3d7ad/2/4/2452-0_2.jpg',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchCrops();
+  }
 
-  void _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2026),
-    );
-    if (picked != null && picked != _selectedDate) {
+  Future<void> _fetchCrops() async {
+    await Future.delayed(Duration(
+        seconds: 3)); // Ensures loading animation lasts at least 2 seconds
+    final response =
+        await http.get(Uri.parse('http://$ipaddress:3000/croprecommendation'));
+
+    print(response.statusCode.toString());
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+
+      print("API Response: $data");
+
       setState(() {
-        _selectedDate = picked;
+        _crops = data.map((item) {
+          return {
+            'name': item['Recommended_Crop'] as String,
+            'harvest': 'Harvest in ${item['Days_Required']} days',
+            'waterNeeded': item['Water_Needed'],
+            'image': item['Crop_Image'] as String,
+          };
+        }).toList();
+
+        _isLoading = false;
+      });
+    } else {
+      print("Failed to load crops");
+      setState(() {
+        _isLoading = false;
       });
     }
   }
 
-  Widget _buildFieldCard(String name, String harvest, String waterNeeded,
-      String fertilizer, String imageUrl) {
+  Widget _buildFieldCard(
+      String name, dynamic harvest, dynamic waterNeeded, String imageUrl) {
     return Card(
       margin: EdgeInsets.symmetric(vertical: 10),
       child: ListTile(
-        leading: Image.network(imageUrl),
+        leading: Image.network(imageUrl.toString(),
+            width: 50, height: 50, fit: BoxFit.cover),
         title: Text(
           name,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(harvest),
-            Text('Water Needed: $waterNeeded'),
-            Text('Fertilizer: $fertilizer'),
+            Text(harvest.toString()),
+            Text('Water Needed: \$waterNeeded'),
           ],
         ),
       ),
@@ -94,14 +78,8 @@ class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _selectDate(context));
-  }
-
-  @override
   Widget build(BuildContext context) {
-    List<Map<String, String>> filteredCrops = _crops.where((crop) {
+    List<Map<String, dynamic>> filteredCrops = _crops.where((crop) {
       return crop['name']!.toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
 
@@ -112,75 +90,60 @@ class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
         title: Text(
           'Crop Calendar',
           style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+              fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => HomePage()),
-            );
+                context, MaterialPageRoute(builder: (context) => HomePage()));
           },
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              SizedBox(height: 20),
-              _selectedDate == null
-                  ? Container()
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Crop Suggestions',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.green,
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        TextField(
-                          decoration: InputDecoration(
-                            labelText: 'Search',
-                            border: OutlineInputBorder(),
-                            suffixIcon: Icon(Icons.search),
-                          ),
-                          onChanged: (value) {
-                            setState(() {
-                              _searchQuery = value;
-                            });
-                          },
-                        ),
-                        SizedBox(height: 20),
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          itemCount: filteredCrops.length,
-                          itemBuilder: (context, index) {
-                            final crop = filteredCrops[index];
-                            return _buildFieldCard(
-                              crop['name']!,
-                              crop['harvest']!,
-                              crop['waterNeeded']!,
-                              crop['fertilizer']!,
-                              crop['image']!,
-                            );
-                          },
-                        ),
-                      ],
+      body: _isLoading
+          ? Center(
+              child: LoadingAnimationWidget.inkDrop(
+                color: Colors.green,
+                size: 60,
+              ),
+            )
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Search',
+                        border: OutlineInputBorder(),
+                        suffixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
                     ),
-            ],
-          ),
-        ),
-      ),
+                    SizedBox(height: 20),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      itemCount: filteredCrops.length,
+                      itemBuilder: (context, index) {
+                        final crop = filteredCrops[index];
+                        return _buildFieldCard(
+                          crop['name']!,
+                          crop['harvest']!,
+                          crop['waterNeeded']!,
+                          crop['image']!,
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 }

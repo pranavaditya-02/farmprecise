@@ -29,12 +29,12 @@ class Started extends StatelessWidget {
             children: [
               SizedBox(height: 100),
               Image.network(
-                'https://static.vecteezy.com/system/resources/previews/003/184/204/original/smart-farming-and-agriculture-technology-icon-vector.jpg',
+                'https://www.mass-chem.com/images/logo-icon-shape.png',
                 height: 150,
               ),
               SizedBox(height: 40),
               Text(
-                'PRECISION AGRICULTURE TECHNOLOGY',
+                'Sproutelligence Farming Reimagined',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,

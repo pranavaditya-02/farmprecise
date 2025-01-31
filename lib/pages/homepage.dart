@@ -309,48 +309,176 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  static Widget _buildFieldCard(String title, String subtitle, String status,
+  Widget _buildFieldCard(String title, String subtitle, String status,
       String length, String imageUrl) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Color(0xFF06D001),
-        borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: () => _showCropDetailsDialog(context, title, length, subtitle),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF06D001),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: ListTile(
+          leading: Image.network(
+            imageUrl,
+            width: 80,
+            height: 80,
+            fit: BoxFit.cover,
+          ),
+          title: Text(
+            title,
+            style: const TextStyle(color: Colors.white),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                subtitle,
+                style: const TextStyle(color: Colors.white70),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    status,
+                    style: const TextStyle(color: Color(0xFF9BEC00)),
+                  ),
+                  Text(
+                    length,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
-      child: ListTile(
-        leading: Image.network(
-          imageUrl,
-          width: 80,
-          height: 80,
-          fit: BoxFit.cover,
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(color: Colors.white),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              subtitle,
-              style: const TextStyle(color: Colors.white70),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    );
+  }
+
+// Add this method to your _HomePageState class
+  void _showCropDetailsDialog(
+      BuildContext context, String cropName, String length, String subtitle) {
+    // Extract the date by removing "Harvest on " from the subtitle
+    String harvestDate = subtitle.replaceAll('Harvest on ', '');
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  status,
-                  style: const TextStyle(color: Color(0xFF9BEC00)),
+                Center(
+                  // Center widget added here
+                  child: Text(
+                    '$cropName',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
                 ),
-                Text(
-                  length,
-                  style: const TextStyle(color: Colors.white),
+                const SizedBox(height: 24),
+                _buildDetailRow('Days After Seeding', '28 Days'),
+                const SizedBox(height: 16),
+                _buildDetailRow('Phase', 'Vegetative'),
+                const SizedBox(height: 16),
+                _buildDetailRow('Season', 'Dry'),
+                const SizedBox(height: 16),
+                _buildDetailRow('Elevation', length),
+                const SizedBox(height: 16),
+                _buildDetailRow('Harvest on', harvestDate),
+                const SizedBox(height: 24),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Text(
+                        '+15 Days to Flowering Phase',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: 0.4,
+                    backgroundColor: Colors.grey[200],
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Colors.green,
+                    ),
+                    minHeight: 8,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text(
+                      'Vegetative',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
+                    ),
+                    Text(
+                      'Flowering',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
+        );
+      },
+    );
+  }
+
+// Helper method to build detail rows
+  Widget _buildDetailRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.grey,
+            fontSize: 16,
+          ),
         ),
-      ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }

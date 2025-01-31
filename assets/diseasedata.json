@@ -129,7 +129,7 @@
     "Recommended Fertilizers": "Balanced NPK fertilizers based on soil test results.",
     "Additional Info": "Optimal temperature, irrigation, and pest control are crucial for healthy cotton growth."
   },
-  "Cotton_Powdery_Mildew": {
+  "Cotton_Powdery_mildew": {
     "Disease Name": "Powdery Mildew",
     "Cause": "Caused by the fungus Erysiphe cichoracearum, which forms white powdery spots on leaves and stems.",
     "Details": "Powdery Mildew weakens the plant by reducing photosynthesis, leading to stunted growth and lower fiber quality.",
@@ -139,7 +139,7 @@
     "Recommended Fertilizers": "Sulfur-rich fertilizers and balanced NPK fertilizers.",
     "Additional Info": "The disease thrives in dry, warm conditions and spreads via airborne spores."
   },
-  "Cotton_Target_Spot": {
+  "Cotton_Target_spot": {
     "Disease Name": "Target Spot",
     "Cause": "Caused by the fungus Corynespora cassiicola, which creates brown circular lesions on leaves.",
     "Details": "Target Spot reduces leaf photosynthesis, leading to premature defoliation and yield loss.",
@@ -248,7 +248,8 @@
     "Recommended Manures": "Compost, organic matter.",
     "Recommended Fertilizers": "Balanced fertilizers with micronutrients.",
     "Additional Info": "Red rot is prevalent in areas with poor drainage and wet conditions."
-  },"SugarCane_Rust": {
+  },
+  "SugarCane_Rust": {
     "Disease Name": "Rust",
     "Cause": "Caused by the fungus Puccinia melanocephala, which forms reddish-brown pustules on sugarcane leaves.",
     "Details": "Rust weakens the plant by reducing photosynthesis, leading to lower sugar content and yield loss.",

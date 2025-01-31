@@ -235,7 +235,8 @@ class _RentProductsFormState extends State<RentProductsForm> {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF06D001),
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
                 ),
               ),
             ],

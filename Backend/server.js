@@ -132,6 +132,20 @@ app.post("/community", (req, res) => {
   });
 });
 
+app.get("/croprecommendation", (req, res) => {
+  const selectQuery =
+    "SELECT Location, Temperature, Humidity, Recommended_Crop ,Days_Required,Water_Needed,Crop_Image FROM crop_recommandation WHERE Location = 'New Delhi'";
+
+  pool.query(selectQuery, (err, results) => {
+    if (err) {
+      console.error("Error executing query:", err);
+      res.status(500).json({ message: "Internal server error" });
+      return;
+    }
+    res.json(results);
+  });
+});
+
 app.listen(port, () => {
-  console.log(`Server is running on 192.168.52.65:${port}`);
+  console.log(`Server is running on 192.168.247.65:${port}`);
 });
