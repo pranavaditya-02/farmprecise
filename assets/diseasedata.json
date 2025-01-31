@@ -49,7 +49,7 @@
     "Recommended Fertilizers": "Balanced fertilizers, especially phosphorus.",
     "Additional Info": "Ear rot commonly occurs during the wet and humid harvest periods."
   },
-  "Maize_Fall_Armyworm": {
+  "maize_fall_armyworm": {
     "Disease Name": "Maize Fall Armyworm",
     "Cause": "Caused by the insect Spodoptera frugiperda, which feeds on maize plants.",
     "Details": "Fall armyworms cause damage by eating the leaves and kernels of maize.",

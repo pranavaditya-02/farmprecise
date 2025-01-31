@@ -46,7 +46,7 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
   @override
   void initState() {
     super.initState();
-    _loadModel(_selectedCrop); 
+    _loadModel(_selectedCrop);
 
     _loadDiseaseDetails();
   }
@@ -225,7 +225,7 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
           ),
           backgroundColor:
               Colors.orange.withOpacity(0.8), // Deeper red with higher opacity
-          duration: Duration(seconds: 3), // You can adjust the duration
+          duration: Duration(seconds: 2), // You can adjust the duration
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
             side: BorderSide(

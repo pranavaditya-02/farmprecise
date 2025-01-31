@@ -104,7 +104,7 @@ class CustomDrawer extends StatelessWidget {
             // Crop Calendar Screen Navigation
             ListTile(
               leading: Icon(Icons.calendar_today, color: Colors.green),
-              title: Text('Crop Calendar'),
+              title: Text('Crop Suggestions'),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
 
@@ -116,7 +116,7 @@ class CustomDrawer extends StatelessWidget {
               },
             ),
 
-            ListTile( 
+            ListTile(
               leading: Icon(Icons.airline_stops, color: Colors.green),
               title: Text('Drone Data'),
               onTap: () {

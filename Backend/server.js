@@ -134,7 +134,7 @@ app.post("/community", (req, res) => {
 
 app.get("/croprecommendation", (req, res) => {
   const selectQuery =
-    "SELECT Location, Temperature, Humidity, Recommended_Crop ,Days_Required,Water_Needed,Crop_Image FROM crop_recommandation WHERE Location = 'New Delhi'";
+    "SELECT Location, Temperature, Humidity, Recommended_Crop ,Days_Required,Water_Needed,Crop_Image FROM crop_recommendation WHERE Location = 'Sathyamangalam'";
 
   pool.query(selectQuery, (err, results) => {
     if (err) {

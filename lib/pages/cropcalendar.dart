@@ -24,7 +24,7 @@ class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
 
   Future<void> _fetchCrops() async {
     await Future.delayed(Duration(
-        seconds: 3)); // Ensures loading animation lasts at least 2 seconds
+        seconds: 3)); // Ensures loading animation lasts at least 3 seconds
     final response =
         await http.get(Uri.parse('http://$ipaddress:3000/croprecommendation'));
 
@@ -35,16 +35,25 @@ class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
 
       print("API Response: $data");
 
-      setState(() {
-        _crops = data.map((item) {
-          return {
-            'name': item['Recommended_Crop'] as String,
-            'harvest': 'Harvest in ${item['Days_Required']} days',
-            'waterNeeded': item['Water_Needed'],
-            'image': item['Crop_Image'] as String,
-          };
-        }).toList();
+      Set<String> uniqueCropNames = {}; // Set to track unique crop names
+      List<Map<String, String>> uniqueCrops = [];
 
+      for (var item in data) {
+        String cropName = item['Recommended_Crop'] as String;
+
+        if (!uniqueCropNames.contains(cropName)) {
+          uniqueCropNames.add(cropName);
+          uniqueCrops.add({
+            'name': cropName,
+            'harvest': 'Harvest in ${item['Days_Required']} days',
+            'waterNeeded': item['Water_Needed'] as String,
+            'image': item['Crop_Image'] as String,
+          });
+        }
+      }
+
+      setState(() {
+        _crops = uniqueCrops;
         _isLoading = false;
       });
     } else {
@@ -55,24 +64,69 @@ class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
     }
   }
 
-  Widget _buildFieldCard(
+  Widget _cropsuggestionCard(
       String name, dynamic harvest, dynamic waterNeeded, String imageUrl) {
-    return Card(
-      margin: EdgeInsets.symmetric(vertical: 10),
-      child: ListTile(
-        leading: Image.network(imageUrl.toString(),
-            width: 50, height: 50, fit: BoxFit.cover),
-        title: Text(
-          name,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(harvest.toString()),
-            Text('Water Needed: \$waterNeeded'),
-          ],
-        ),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image with rounded corners
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    imageUrl,
+                    width: 130,
+                    height: 100,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Text content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        harvest.toString(),
+                        style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Water Needed: $waterNeeded ',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -88,7 +142,7 @@ class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
         backgroundColor: Colors.green,
         centerTitle: true,
         title: Text(
-          'Crop Calendar',
+          'Crop Suggestions',
           style: TextStyle(
               fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
         ),
@@ -128,11 +182,10 @@ class _CropSuggestionsPageState extends State<CropSuggestionsPage> {
                     ListView.builder(
                       shrinkWrap: true,
                       physics: NeverScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       itemCount: filteredCrops.length,
                       itemBuilder: (context, index) {
                         final crop = filteredCrops[index];
-                        return _buildFieldCard(
+                        return _cropsuggestionCard(
                           crop['name']!,
                           crop['harvest']!,
                           crop['waterNeeded']!,

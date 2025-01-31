@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'package:farmprecise/components/custom_appbar.dart';
 import 'package:farmprecise/components/custom_drawer.dart';
 import 'package:farmprecise/components/bottom_navigation.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -29,6 +30,7 @@ class _HomePageState extends State<HomePage> {
   final String soilMoisture = '65%';
   final String fire = 'No fire';
   int _selectedIndex = 0;
+  bool isLoading = true;
 
   final List<Widget> _pages = [
     HomePage(),
@@ -78,6 +80,7 @@ class _HomePageState extends State<HomePage> {
         conditionText = data['current']['condition']['text'];
         conditionIconUrl = 'http:${data['current']['condition']['icon']}';
         rainfall = '${data['current']['precip_mm']} mm';
+        isLoading = false; // Data is loaded
       });
     } else {
       throw Exception('Failed to load weather data');
@@ -154,36 +157,45 @@ class _HomePageState extends State<HomePage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        temperature.isNotEmpty ? temperature : 'Loading...',
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 24),
-                      ),
+                      temperature.isNotEmpty
+                          ? Text(
+                              temperature,
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 24),
+                            )
+                          : LoadingAnimationWidget.waveDots(
+                              color: Colors.white, size: 24),
                       Row(
                         children: [
-                          Image.network(
-                              conditionIconUrl.isNotEmpty
-                                  ? conditionIconUrl
-                                  : 'https://via.placeholder.com/32',
+                          if (conditionIconUrl
+                              .isNotEmpty) // Only show the image if URL is available
+                            Image.network(
+                              conditionIconUrl,
                               width: 32,
-                              height: 32),
+                              height: 32,
+                            ),
                           const SizedBox(width: 8),
-                          Text(
-                            conditionText.isNotEmpty
-                                ? conditionText
-                                : 'Loading...',
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 16),
-                          ),
+                          conditionText.isNotEmpty
+                              ? Text(
+                                  conditionText,
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 16),
+                                )
+                              : LoadingAnimationWidget.waveDots(
+                                  color: Colors.white, size: 16),
                         ],
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    location.isNotEmpty ? location : 'Loading...',
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
-                  ),
+                  location.isNotEmpty
+                      ? Text(
+                          location,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 16),
+                        )
+                      : LoadingAnimationWidget.waveDots(
+                          color: Colors.white, size: 16),
                   const SizedBox(height: 16),
                   Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -192,9 +204,8 @@ class _HomePageState extends State<HomePage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
-                            child: _buildWeatherInfo(
-                                light, 'Medium', Icons.lightbulb),
-                          ),
+                              child: _buildWeatherInfo(
+                                  light, 'Medium', Icons.lightbulb)),
                           const SizedBox(width: 8),
                           Expanded(
                             child: _buildWeatherInfo(
@@ -216,13 +227,15 @@ class _HomePageState extends State<HomePage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
-                            child:
-                                _buildWeatherInfo('CO2', '400ppm', Icons.cloud),
-                          ),
+                              child: _buildWeatherInfo(
+                                  'CO2', '400ppm', Icons.cloud)),
                           const SizedBox(width: 8),
                           Expanded(
                             child: _buildWeatherInfo(
-                                fire, 'No fire', Icons.local_fire_department),
+                              fire,
+                              'No fire',
+                              Icons.local_fire_department,
+                            ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
