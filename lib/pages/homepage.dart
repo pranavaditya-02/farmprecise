@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:farmprecise/dashboard/farmercommunity.dart';
 import 'package:farmprecise/pages/cropcalendar.dart';
 import 'package:farmprecise/pages/cropscannner.dart';
@@ -370,100 +371,159 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-// Add this method to your _HomePageState class
   void _showCropDetailsDialog(
       BuildContext context, String cropName, String length, String subtitle) {
-    // Extract the date by removing "Harvest on " from the subtitle
     String harvestDate = subtitle.replaceAll('Harvest on ', '');
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
+          backgroundColor: Colors.transparent,
+          child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  // Center widget added here
-                  child: Text(
-                    '$cropName',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1.5,
                   ),
-                ),
-                const SizedBox(height: 24),
-                _buildDetailRow('Days After Seeding', '28 Days'),
-                const SizedBox(height: 16),
-                _buildDetailRow('Phase', 'Vegetative'),
-                const SizedBox(height: 16),
-                _buildDetailRow('Season', 'Dry'),
-                const SizedBox(height: 16),
-                _buildDetailRow('Elevation', length),
-                const SizedBox(height: 16),
-                _buildDetailRow('Harvest on', harvestDate),
-                const SizedBox(height: 24),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text(
-                        '+15 Days to Flowering Phase',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: 0.4,
-                    backgroundColor: Colors.grey[200],
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Colors.green,
-                    ),
-                    minHeight: 8,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text(
-                      'Vegetative',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
-                    ),
-                    Text(
-                      'Flowering',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      spreadRadius: 2,
                     ),
                   ],
                 ),
-              ],
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Text(
+                        cropName,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildDetailRow('Days After Seeding', '28 Days',
+                        valueColor: Colors.green[300]!),
+                    const SizedBox(height: 16),
+                    _buildDetailRow('Phase', 'Vegetative',
+                        valueColor: Colors.green[300]!),
+                    const SizedBox(height: 16),
+                    _buildDetailRow('Season', 'Dry',
+                        valueColor: Colors.green[300]!),
+                    const SizedBox(height: 16),
+                    _buildDetailRow('Elevation', length,
+                        valueColor: Colors.green[300]!),
+                    const SizedBox(height: 16),
+                    _buildDetailRow('Harvest on', harvestDate,
+                        valueColor: Colors.green[300]!),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.green[200]!, Colors.green[400]!],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.green.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.timer, color: Colors.white, size: 16),
+                          SizedBox(width: 8),
+                          Text(
+                            '+15 Days to Flowering Phase',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: LinearGradient(
+                          colors: [Colors.grey[300]!, Colors.grey[100]!],
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Stack(
+                          children: [
+                            LinearProgressIndicator(
+                              value: 0.4,
+                              backgroundColor: Colors.transparent,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.green[400]!,
+                              ),
+                              minHeight: 12,
+                            ),
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.white.withOpacity(0.2),
+                                      Colors.white.withOpacity(0),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text(
+                          'Vegetative',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          'Flowering',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         );
@@ -472,23 +532,23 @@ class _HomePageState extends State<HomePage> {
   }
 
 // Helper method to build detail rows
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildDetailRow(String label, String value, {Color valueColor = Colors.black}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
           style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 16,
+            color: Colors.white,
+            fontSize: 14,
           ),
         ),
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.black,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
+          style: TextStyle(
+            color: valueColor,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
