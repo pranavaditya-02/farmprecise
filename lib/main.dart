@@ -78,7 +78,7 @@ class Started extends StatelessWidget {
                     );
                   },
                   icon: Image.network(
-                    'https://static-00.iconduck.com/assets.00/connect-icon-2048x2048-llyaix70.png',
+                    'https://cdn2.iconfinder.com/data/icons/apple-inspire-white/100/Apple-92-512.png',
                     height: 24,
                   ),
                   label: Row(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 class MandiPricesScreen extends StatefulWidget {
   @override
@@ -52,17 +53,19 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
         List<MandiPrice> prices = [];
 
         for (var record in data['records']) {
-          prices.add(MandiPrice.fromJson(record));
+          final mandiPrice = MandiPrice.fromJson(record);
+          if (mandiPrice.state == 'Tamil Nadu') { 
+            prices.add(mandiPrice);
+          }
         }
 
         setState(() {
           mandiPrices = prices;
           filteredPrices = prices;
           isLoading = false;
-          totalRecords = recordCount;
+          totalRecords = prices.length; // Now this is Tamil Nadu only
 
-          // Extract unique values for filters
-          states = prices.map((p) => p.state).toSet();
+          // Extract unique values for filters (no state)
           districts = prices.map((p) => p.district).toSet();
           markets = prices.map((p) => p.market).toSet();
           commodities = prices.map((p) => p.commodity).toSet();
@@ -81,7 +84,6 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
   void applyFilters() {
     setState(() {
       filteredPrices = mandiPrices.where((price) {
-        bool matchesState = selectedState == null || price.state == selectedState;
         bool matchesDistrict = selectedDistrict == null || price.district == selectedDistrict;
         bool matchesMarket = selectedMarket == null || price.market == selectedMarket;
         bool matchesCommodity = selectedCommodity == null || price.commodity == selectedCommodity;
@@ -89,14 +91,13 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
             price.commodity.toLowerCase().contains(searchController.text.toLowerCase()) ||
             price.market.toLowerCase().contains(searchController.text.toLowerCase());
         
-        return matchesState && matchesDistrict && matchesMarket && matchesCommodity && matchesSearch;
+        return matchesDistrict && matchesMarket && matchesCommodity && matchesSearch;
       }).toList();
     });
   }
 
   void clearFilters() {
     setState(() {
-      selectedState = null;
       selectedDistrict = null;
       selectedMarket = null;
       selectedCommodity = null;
@@ -107,146 +108,181 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final uniqueMarkets = filteredPrices.map((e) => e.market).toSet().length;
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.green[600],
-        title: Row(
-          children: [
-            Icon(Icons.store, color: Colors.white),
-            SizedBox(width: 8),
-            Text(
-              'Mandi Prices',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              setState(() {
-                isLoading = true;
-              });
-              fetchMandiPrices();
-            },
+        centerTitle: true,
+        title: Text(
+          'Market Prices',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
-        ],
+        ),
       ),
       body: Column(
         children: [
           // Search and Filter Section
-          Container(
-            color: Colors.white,
-            padding: EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Search Bar
-                TextField(
-                  controller: searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search commodity or market...',
-                    prefixIcon: Icon(Icons.search, color: Colors.green[600]),
-                    suffixIcon: searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(Icons.clear),
-                            onPressed: () {
-                              searchController.clear();
-                              applyFilters();
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.green[300]!),
+          Card(
+            margin: EdgeInsets.all(12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8), // Border radius 8
+              side: BorderSide(
+                color: Colors.green[100]!, // Border color
+                width: 1,                  // Border width 1
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // Search Bar
+                  TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search commodity or market...',
+                      prefixIcon: Icon(Icons.search, color: Colors.green[600]),
+                      suffixIcon: searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(Icons.clear),
+                              onPressed: () {
+                                searchController.clear();
+                                applyFilters();
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.green[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.green[600]!, width: 2),
+                      ),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.green[600]!, width: 2),
-                    ),
+                    onChanged: (value) => applyFilters(),
                   ),
-                  onChanged: (value) => applyFilters(),
-                ),
-                SizedBox(height: 16),
-                
-                // Filter Chips
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildFilterChip('State', selectedState, states.toList(), (value) {
-                        setState(() {
-                          selectedState = value;
-                          selectedDistrict = null;
-                          selectedMarket = null;
-                        });
-                        applyFilters();
-                      }),
-                      SizedBox(width: 8),
-                      _buildFilterChip('District', selectedDistrict, 
-                          districts.where((d) => selectedState == null || 
-                              mandiPrices.any((p) => p.state == selectedState && p.district == d)).toList(),
-                          (value) {
+                  SizedBox(height: 16),
+
+                  // Filter Chips
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterChipWithIcon(
+                          icon: Icons.location_city,
+                          label: 'District',
+                          selectedValue: selectedDistrict,
+                          options: districts.toList(),
+                          onSelected: (value) {
                             setState(() {
                               selectedDistrict = value;
                               selectedMarket = null;
                             });
                             applyFilters();
-                          }),
-                      SizedBox(width: 8),
-                      _buildFilterChip('Market', selectedMarket,
-                          markets.where((m) => (selectedState == null || selectedDistrict == null) ||
-                              mandiPrices.any((p) => p.state == selectedState && 
-                                  p.district == selectedDistrict && p.market == m)).toList(),
-                          (value) {
+                          },
+                        ),
+                        SizedBox(width: 8),
+                        _buildFilterChipWithIcon(
+                          icon: Icons.store_mall_directory,
+                          label: 'Market',
+                          selectedValue: selectedMarket,
+                          options: markets.toList(),
+                          onSelected: (value) {
                             setState(() {
                               selectedMarket = value;
                             });
                             applyFilters();
-                          }),
-                      SizedBox(width: 8),
-                      _buildFilterChip('Commodity', selectedCommodity, commodities.toList(), (value) {
-                        setState(() {
-                          selectedCommodity = value;
-                        });
-                        applyFilters();
-                      }),
-                      SizedBox(width: 8),
-                      // Clear Filters Button
-                      if (selectedState != null || selectedDistrict != null || 
-                          selectedMarket != null || selectedCommodity != null)
-                        ActionChip(
-                          label: Text('Clear All'),
-                          onPressed: clearFilters,
-                          backgroundColor: Colors.red[100],
-                          labelStyle: TextStyle(color: Colors.red[700]),
+                          },
                         ),
-                    ],
+                        SizedBox(width: 8),
+                        _buildFilterChipWithIcon(
+                          icon: Icons.shopping_basket,
+                          label: 'Commodity',
+                          selectedValue: selectedCommodity,
+                          options: commodities.toList(),
+                          onSelected: (value) {
+                            setState(() {
+                              selectedCommodity = value;
+                            });
+                            applyFilters();
+                          },
+                        ),
+                        SizedBox(width: 8),
+                        // Clear Filters Button
+                        if (selectedDistrict != null ||
+                            selectedMarket != null ||
+                            selectedCommodity != null)
+                          ActionChip(
+                            avatar: Icon(Icons.clear, color: Colors.red[700], size: 18),
+                            label: Text('Clear All'),
+                            onPressed: clearFilters,
+                            backgroundColor: Colors.red[50],
+                            labelStyle: TextStyle(color: Colors.red[700]),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Results Summary
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: Colors.green[50],
-            child: Text(
-              '${filteredPrices.length} markets found • Showing $totalRecords records',
-              style: TextStyle(
-                color: Colors.green[700],
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
+                ],
               ),
             ),
           ),
+
+          // Container(
+          //   width: double.infinity,
+          //   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          //   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          //   decoration: BoxDecoration(
+          //     color: Colors.green[50],
+          //     borderRadius: BorderRadius.circular(8), // Border radius 8
+          //     border: Border.all(
+          //       color: Colors.green[100]!, // Border color
+          //       width: 1,                  // Border width 1
+          //     ),
+          //   ),
+          //   child: Row(
+          //     children: [
+          //       Container(
+          //         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          //         decoration: BoxDecoration(
+          //           color: Colors.green[100],
+          //           borderRadius: BorderRadius.circular(8),
+          //         ),
+          //         child: Row(
+          //           children: [
+          //             Icon(Icons.location_on, color: Colors.green[700], size: 16),
+          //             SizedBox(width: 4),
+          //             Text(
+          //               'Tamil Nadu',
+          //               style: TextStyle(
+          //                 color: Colors.green[800],
+          //                 fontWeight: FontWeight.bold,
+          //                 fontSize: 13,
+          //               ),
+          //             ),
+          //           ],
+          //         ),
+          //       ),
+          //       SizedBox(width: 12),
+          //       Expanded(
+          //         child: Text(
+          //           '$uniqueMarkets markets found • ${filteredPrices.length} records',
+          //           style: TextStyle(
+          //             color: Colors.green[700],
+          //             fontWeight: FontWeight.w500,
+          //             fontSize: 14,
+          //           ),
+          //           overflow: TextOverflow.ellipsis,
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
           
           // Price List
           Expanded(
@@ -255,9 +291,11 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(color: Colors.green[600]),
+                        LoadingAnimationWidget.threeArchedCircle(
+                          color: Colors.green[600]!,
+                          size: 50,
+                        ),
                         SizedBox(height: 16),
-                        Text('Loading mandi prices...', style: TextStyle(color: Colors.green[600])),
                       ],
                     ),
                   )
@@ -373,8 +411,14 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
     
     return Card(
       margin: EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0, // Remove elevation
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8), // Border radius 8
+        side: BorderSide(
+          color: Colors.green[100]!, // Border color
+          width: 1,                  // Border width 1
+        ),
+      ),
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
@@ -520,6 +564,31 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFilterChipWithIcon({
+  required IconData icon,
+  required String label,
+  required String? selectedValue,
+  required List<String> options,
+  required Function(String?) onSelected,
+}) {
+    return FilterChip(
+      avatar: Icon(icon, size: 18, color: selectedValue != null ? Colors.green[700] : Colors.grey[500]),
+      label: Text(selectedValue ?? label),
+      selected: selectedValue != null,
+      onSelected: (bool selected) {
+        if (options.isNotEmpty) {
+          _showFilterDialog(label, options, selectedValue, onSelected);
+        }
+      },
+      selectedColor: Colors.green[100],
+      checkmarkColor: Colors.green[700],
+      backgroundColor: Colors.grey[100],
+      side: BorderSide(
+        color: selectedValue != null ? Colors.green[600]! : Colors.grey[300]!,
+      ),
     );
   }
 }
