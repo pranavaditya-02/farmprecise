@@ -1,11 +1,13 @@
+import 'package:farmprecise/pages/crops/cropplanning.dart';
+import 'package:farmprecise/pages/cropscanner/pest.dart';
 import 'package:flutter/material.dart';
 import 'package:farmprecise/dashboard/farmercommunity.dart';
-import 'package:farmprecise/pages/cropscannner.dart';
-import 'package:farmprecise/pages/dronedetails.dart';
+import 'package:farmprecise/pages/cropscanner/cropscannner.dart';
+import 'package:farmprecise/pages/drone/dronedetails.dart';
 import 'package:farmprecise/pages/homepage.dart';
-import 'package:farmprecise/pages/cropcalendar.dart';
+import 'package:farmprecise/pages/crops/cropcalendar.dart';
 import 'package:farmprecise/pages/rentpage.dart';
-import 'package:farmprecise/pages/mandiPrice.dart';
+import 'package:farmprecise/pages/marketprice/mandiPrice.dart';
 import 'package:farmprecise/main.dart';
 
 class CustomDrawer extends StatelessWidget {
@@ -126,6 +128,32 @@ class CustomDrawer extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                       builder: (context) => MandiPricesScreen()),
+                );
+              },
+            ),
+              ListTile(
+              leading: Icon(Icons.currency_rupee, color: Colors.green), // or Icons.attach_money
+              title: Text('Crop planning'),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => CropPlanningScreen()),
+                );
+              },
+            ),
+              ListTile(
+              leading: Icon(Icons.currency_rupee, color: Colors.green), // or Icons.attach_money
+              title: Text('Pest management'),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => PestManagementScreen()),
                 );
               },
             ),

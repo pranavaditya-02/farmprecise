@@ -35,7 +35,7 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
     try {
       // Step 1: Get total records with limit=1
       final metaResponse = await http.get(
-        Uri.parse('https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=579b464db66ec23bdd000001563316a5f74f44c36e0e0d93bc7fe2d9&format=json&limit=1'),
+        Uri.parse('https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=579b464db66ec23bdd000001563316a5f74f44c36e0e0d93bc7fe2d9&format=json&limit=5000'),
       );
       int recordCount = 0;
       if (metaResponse.statusCode == 200) {

@@ -1,6 +1,6 @@
 import 'package:farmprecise/pages/homepage.dart';
 import 'package:flutter/material.dart';
-import 'package:farmprecise/pages/login_page.dart';
+import 'package:farmprecise/pages/onboarding/login_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -27,12 +27,12 @@ class Started extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(height: 100),
-              Image.network(
-                'https://www.mass-chem.com/images/logo-icon-shape.png',
-                height: 150,
+              SizedBox(height: 80),
+              Image.asset(
+                'assets/logomain.png',
+                height: 250,
               ),
-              SizedBox(height: 40),
+              SizedBox(height: 10),
               Text(
                 'Sproutelligence Farming Reimagined',
                 style: TextStyle(
@@ -94,7 +94,7 @@ class Started extends StatelessWidget {
                         ),
                       ),
                       SizedBox(
-                          width: 8), // Adjust the spacing between icon and text
+                          width: 8), 
                     ],
                   ),
                 ),

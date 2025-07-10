@@ -1,4 +1,4 @@
-import 'package:farmprecise/pages/dronedetails.dart';
+import 'package:farmprecise/pages/drone/dronedetails.dart';
 import 'package:flutter/material.dart';
 
 class AirDroneDetailScreen extends StatelessWidget {

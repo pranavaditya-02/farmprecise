@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:farmprecise/pages/farmsetup.dart';
+import 'package:farmprecise/pages/onboarding/farmsetup.dart';
 
 void main() {
   runApp(MyApp());

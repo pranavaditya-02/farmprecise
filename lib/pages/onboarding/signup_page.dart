@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:farmprecise/Ip.dart';
-import 'package:farmprecise/pages/login_page.dart';
+import 'package:farmprecise/pages/onboarding/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:farmprecise/pages/language_page.dart';
+import 'package:farmprecise/pages/onboarding/language_page.dart';
 
 class SignupPage extends StatefulWidget {
   @override

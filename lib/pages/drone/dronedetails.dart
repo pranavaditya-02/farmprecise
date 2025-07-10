@@ -1,7 +1,7 @@
 import 'package:farmprecise/pages/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:farmprecise/dashboard/dashboard.dart';
-import 'package:farmprecise/pages/drone.dart';
+import 'package:farmprecise/pages/drone/drone.dart';
 
 class DroneMonitoringScreen extends StatelessWidget {
   final String backgroundImage;
