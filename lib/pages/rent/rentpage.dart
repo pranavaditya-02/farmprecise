@@ -1,7 +1,7 @@
 import 'package:farmprecise/pages/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:farmprecise/dashboard/dashboard.dart';
+import 'package:farmprecise/pages/dashboard/dashboard.dart';
 
 class RentProductsForm extends StatefulWidget {
   @override

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class CropPlanningScreen extends StatefulWidget {
   @override
@@ -30,11 +31,20 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
   
   final List<String> _seasons = ['Kharif', 'Rabi', 'Zaid'];
 
-  // Replace with your actual Google Gemini API key
-  final String _apiKey = 'AIzaSyCJJ1esglN4bxEtSGHN7a0tGCEHE4nG-cQ';
+  // Get API key from environment variables
+  String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
 
   Future<void> _generateCropPlan() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Check if API key is available
+    if (_apiKey.isEmpty) {
+      setState(() {
+        _result = 'Error: API key not found. Please add GEMINI_API_KEY to your .env file';
+        _isLoading = false;
+      });
+      return;
+    }
 
     setState(() {
       _isLoading = true;

@@ -1,12 +1,12 @@
 import 'package:farmprecise/pages/crops/cropplanning.dart';
 import 'package:farmprecise/pages/cropscanner/pest.dart';
 import 'package:flutter/material.dart';
-import 'package:farmprecise/dashboard/farmercommunity.dart';
+import 'package:farmprecise/pages/dashboard/farmercommunity.dart';
 import 'package:farmprecise/pages/cropscanner/cropscannner.dart';
 import 'package:farmprecise/pages/drone/dronedetails.dart';
 import 'package:farmprecise/pages/homepage.dart';
 import 'package:farmprecise/pages/crops/cropcalendar.dart';
-import 'package:farmprecise/pages/rentpage.dart';
+import 'package:farmprecise/pages/rent/rentpage.dart';
 import 'package:farmprecise/pages/marketprice/mandiPrice.dart';
 import 'package:farmprecise/main.dart';
 

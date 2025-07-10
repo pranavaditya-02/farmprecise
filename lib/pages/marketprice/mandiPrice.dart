@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class MandiPricesScreen extends StatefulWidget {
   @override
@@ -23,7 +24,7 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
   Set<String> commodities = {};
   
   TextEditingController searchController = TextEditingController();
-  int totalRecords = 0; // Add this to your _MandiPricesScreenState
+  int totalRecords = 0;
 
   @override
   void initState() {
@@ -33,9 +34,16 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
 
   Future<void> fetchMandiPrices() async {
     try {
+      // Get API key from environment, fallback to hardcoded if not found
+      final apiKey = dotenv.env['MARKET_PRICE_KEY'];
+      
+      if (apiKey == null || apiKey.isEmpty) {
+        throw Exception('API key not found');
+      }
+
       // Step 1: Get total records with limit=1
       final metaResponse = await http.get(
-        Uri.parse('https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=579b464db66ec23bdd000001563316a5f74f44c36e0e0d93bc7fe2d9&format=json&limit=5000'),
+        Uri.parse('https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=$apiKey&format=json&limit=5000'),
       );
       int recordCount = 0;
       if (metaResponse.statusCode == 200) {
@@ -45,7 +53,7 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
 
       // Step 2: Fetch all records using the dynamic limit
       final response = await http.get(
-        Uri.parse('https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=579b464db66ec23bdd000001563316a5f74f44c36e0e0d93bc7fe2d9&format=json&limit=$recordCount'),
+        Uri.parse('https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=$apiKey&format=json&limit=$recordCount'),
       );
 
       if (response.statusCode == 200) {
@@ -54,7 +62,7 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
 
         for (var record in data['records']) {
           final mandiPrice = MandiPrice.fromJson(record);
-          if (mandiPrice.state == 'Tamil Nadu') { 
+          if (mandiPrice.state == 'Kerala') { 
             prices.add(mandiPrice);
           }
         }

@@ -1,5 +1,4 @@
 import 'package:farmprecise/Ip.dart';
-import 'package:farmprecise/dashboard/dashboard.dart';
 import 'package:farmprecise/pages/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;

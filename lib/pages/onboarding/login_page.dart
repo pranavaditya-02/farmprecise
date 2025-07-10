@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'signup_page.dart';
-import 'package:farmprecise/dashboard/dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
   @override

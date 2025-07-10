@@ -6,7 +6,7 @@ import 'package:farmprecise/pages/crops/cropcalendar.dart';
 import 'package:farmprecise/pages/cropscanner/cropscannner.dart';
 import 'package:farmprecise/pages/drone/dronedetails.dart';
 import 'package:farmprecise/pages/homepage.dart';
-import 'package:farmprecise/pages/rentpage.dart';
+import 'package:farmprecise/pages/rent/rentpage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';

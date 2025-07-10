@@ -12,25 +12,14 @@ class PestManagementScreen extends StatefulWidget {
 class _PestManagementScreenState extends State<PestManagementScreen> {
   final _formKey = GlobalKey<FormState>();
   final _cropController = TextEditingController();
-  final _locationController = TextEditingController();
-  final _symptomsController = TextEditingController();
-  final _additionalInfoController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   
-  String _selectedPestType = 'Insect';
-  String _severityLevel = 'Low';
   bool _isLoading = false;
   String _result = '';
   File? _selectedImage;
 
-  final List<String> _pestTypes = [
-    'Insect', 'Disease', 'Weed', 'Fungal', 'Bacterial', 'Viral', 'Nematode'
-  ];
-  
-  final List<String> _severityLevels = ['Low', 'Medium', 'High', 'Critical'];
-
-  // Replace with your actual OpenAI API key
-  final String _apiKey = 'YOUR_OPENAI_API_KEY';
+  // Replace with your actual Gemini API key
+  final String _geminiApiKey = '';
 
   Future<void> _pickImage() async {
     try {
@@ -189,6 +178,16 @@ class _PestManagementScreenState extends State<PestManagementScreen> {
 
   Future<void> _identifyPestAndTreatment() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    if (_selectedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please upload an image of the pest/damage'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -196,12 +195,17 @@ class _PestManagementScreenState extends State<PestManagementScreen> {
     });
 
     try {
-      final response = await _callChatGPTAPI(
-        "Identify pest and provide treatment recommendations for ${_cropController.text} crop. "
-        "Location: ${_locationController.text}, Pest type: $_selectedPestType, "
-        "Severity: $_severityLevel. Symptoms observed: ${_symptomsController.text}. "
-        "Additional information: ${_additionalInfoController.text}. "
-        "Provide detailed identification, treatment methods, prevention strategies, and organic alternatives."
+      final response = await _callGeminiAPI(
+        "You are an expert agricultural entomologist and plant pathologist specializing in pest identification and management. "
+        "Please analyze the uploaded image and provide detailed pest identification and treatment recommendations for the ${_cropController.text} crop.\n\n"
+        "Based on the image, please provide:\n"
+        "1. Detailed pest/disease identification\n"
+        "2. Severity assessment\n"
+        "3. Treatment methods (both chemical and organic options)\n"
+        "4. Prevention strategies\n"
+        "5. Expected recovery timeline\n"
+        "6. Monitoring recommendations\n"
+        "7. When to seek professional help if needed"
       );
 
       setState(() {
@@ -216,37 +220,76 @@ class _PestManagementScreenState extends State<PestManagementScreen> {
     }
   }
 
-  Future<String> _callChatGPTAPI(String prompt) async {
-    final url = Uri.parse('https://api.openai.com/v1/chat/completions');
+  Future<String> _callGeminiAPI(String prompt) async {
+    if (_selectedImage == null) {
+      throw Exception('No image selected');
+    }
+
+    final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent');
+    
+    // Convert image to base64
+    final bytes = await _selectedImage!.readAsBytes();
+    final base64Image = base64Encode(bytes);
     
     final response = await http.post(
       url,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_apiKey',
+        'X-goog-api-key': _geminiApiKey,
       },
       body: jsonEncode({
-        'model': 'gpt-3.5-turbo',
-        'messages': [
+        'contents': [
           {
-            'role': 'system',
-            'content': 'You are an expert agricultural entomologist and plant pathologist specializing in pest identification and management.'
-          },
-          {
-            'role': 'user',
-            'content': prompt,
+            'parts': [
+              {
+                'text': prompt,
+              },
+              {
+                'inline_data': {
+                  'mime_type': 'image/jpeg',
+                  'data': base64Image
+                }
+              }
+            ]
           }
         ],
-        'max_tokens': 1200,
-        'temperature': 0.7,
+        'generationConfig': {
+          'temperature': 0.7,
+          'topK': 40,
+          'topP': 0.95,
+          'maxOutputTokens': 2048,
+        },
+        'safetySettings': [
+          {
+            'category': 'HARM_CATEGORY_HARASSMENT',
+            'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+          },
+          {
+            'category': 'HARM_CATEGORY_HATE_SPEECH',
+            'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+          },
+          {
+            'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+            'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+          },
+          {
+            'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
+            'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+          }
+        ]
       }),
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return data['choices'][0]['message']['content'];
+      if (data['candidates'] != null && data['candidates'].isNotEmpty) {
+        return data['candidates'][0]['content']['parts'][0]['text'];
+      } else {
+        throw Exception('No response generated');
+      }
     } else {
-      throw Exception('Failed to get response: ${response.statusCode}');
+      final errorData = jsonDecode(response.body);
+      throw Exception('API Error: ${response.statusCode} - ${errorData['error']['message']}');
     }
   }
 
@@ -305,7 +348,7 @@ class _PestManagementScreenState extends State<PestManagementScreen> {
                           ),
                         ),
                         Text(
-                          'AI-powered pest identification & treatment',
+                          'AI Image Analysis for Pest Management',
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.white70,
@@ -331,83 +374,35 @@ class _PestManagementScreenState extends State<PestManagementScreen> {
                       return null;
                     },
                   ),
-                  SizedBox(height: 15),
-                  _buildTextFormField(
-                    'Location',
-                    _locationController,
-                    'Enter farm location',
-                    Icons.location_on,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter location';
-                      }
-                      return null;
-                    },
-                  ),
                 ]),
                 
                 SizedBox(height: 20),
                 
-                // Pest Details Card
-                _buildInputCard([
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildDropdownField(
-                          'Pest Type',
-                          _selectedPestType,
-                          _pestTypes,
-                          (value) => setState(() => _selectedPestType = value!),
-                          Icons.bug_report,
-                        ),
-                      ),
-                      SizedBox(width: 15),
-                      Expanded(
-                        child: _buildDropdownField(
-                          'Severity Level',
-                          _severityLevel,
-                          _severityLevels,
-                          (value) => setState(() => _severityLevel = value!),
-                          Icons.warning,
-                        ),
-                      ),
-                    ],
-                  ),
-                ]),
-                
-                SizedBox(height: 20),
-                
-                // Symptoms Card
-                _buildInputCard([
-                  _buildTextFormField(
-                    'Symptoms Observed',
-                    _symptomsController,
-                    'Describe symptoms, damage patterns, appearance',
-                    Icons.visibility,
-                    maxLines: 4,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please describe the symptoms';
-                      }
-                      return null;
-                    },
-                  ),
-                ]),
-                
-                SizedBox(height: 20),
-                
-                // Image Upload Card
+                // Image Upload Card - Now Required
                 _buildInputCard([
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Upload Image (Optional)',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF2E7D32),
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            'Upload Image',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF2E7D32),
+                            ),
+                          ),
+                          SizedBox(width: 5),
+                          Text(
+                            '*',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(height: 10),
                       GestureDetector(
@@ -416,7 +411,7 @@ class _PestManagementScreenState extends State<PestManagementScreen> {
                         },
                         child: Container(
                           width: double.infinity,
-                          height: 150,
+                          height: 200,
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: Color(0xFF4CAF50),
@@ -432,23 +427,41 @@ class _PestManagementScreenState extends State<PestManagementScreen> {
                                   children: [
                                     Icon(
                                       Icons.camera_alt,
-                                      size: 50,
+                                      size: 60,
                                       color: Color(0xFF4CAF50),
                                     ),
-                                    SizedBox(height: 10),
+                                    SizedBox(height: 15),
                                     Text(
-                                      'Tap to upload pest/damage image',
+                                      'Upload pest/damage image',
                                       style: TextStyle(
                                         color: Color(0xFF666666),
-                                        fontSize: 16,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                    SizedBox(height: 5),
+                                    SizedBox(height: 8),
                                     Text(
-                                      'Helps with better identification',
+                                      'Required for AI analysis',
                                       style: TextStyle(
-                                        color: Color(0xFF999999),
-                                        fontSize: 12,
+                                        color: Colors.red,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    SizedBox(height: 10),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: Color(0xFF4CAF50),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        'Tap to Upload',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -487,24 +500,30 @@ class _PestManagementScreenState extends State<PestManagementScreen> {
                                         ),
                                       ),
                                     ),
+                                    Positioned(
+                                      bottom: 8,
+                                      left: 8,
+                                      child: Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green,
+                                          borderRadius: BorderRadius.circular(15),
+                                        ),
+                                        child: Text(
+                                          'Image Ready',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
                         ),
                       ),
                     ],
-                  ),
-                ]),
-                
-                SizedBox(height: 20),
-                
-                // Additional Information Card
-                _buildInputCard([
-                  _buildTextFormField(
-                    'Additional Information',
-                    _additionalInfoController,
-                    'Weather conditions, previous treatments, etc.',
-                    Icons.info,
-                    maxLines: 3,
                   ),
                 ]),
                 
@@ -545,7 +564,7 @@ class _PestManagementScreenState extends State<PestManagementScreen> {
                               Icon(Icons.search, size: 24),
                               SizedBox(width: 10),
                               Text(
-                                'Analyze & Get Treatment',
+                                'Analyze Image & Get Treatment',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -579,10 +598,10 @@ class _PestManagementScreenState extends State<PestManagementScreen> {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.healing, color: Color(0xFF4CAF50), size: 30),
+                              Icon(Icons.smart_toy, color: Color(0xFF4CAF50), size: 30),
                               SizedBox(width: 10),
                               Text(
-                                'Treatment Recommendations',
+                                'AI Analysis Results',
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,

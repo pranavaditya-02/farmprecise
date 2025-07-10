@@ -1,4 +1,4 @@
-import 'package:farmprecise/dashboard/farmercommunity.dart';
+import 'package:farmprecise/pages/dashboard/farmercommunity.dart';
 import 'package:farmprecise/pages/cropscanner/cropscannner.dart';
 import 'package:farmprecise/pages/homepage.dart';
 import 'package:flutter/material.dart';

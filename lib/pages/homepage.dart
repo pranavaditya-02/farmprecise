@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:ui';
-import 'package:farmprecise/dashboard/farmercommunity.dart';
+import 'package:farmprecise/pages/dashboard/farmercommunity.dart';
 import 'package:farmprecise/pages/crops/cropcalendar.dart';
 import 'package:farmprecise/pages/cropscanner/cropscannner.dart';
 import 'package:farmprecise/pages/drone/dronedetails.dart';
-import 'package:farmprecise/pages/rentpage.dart';
+import 'package:farmprecise/pages/rent/rentpage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';

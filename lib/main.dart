@@ -1,8 +1,19 @@
 import 'package:farmprecise/pages/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:farmprecise/pages/onboarding/login_page.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+Future<void> main() async {
+  // Ensure Flutter is initialized
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables from assets/.env
+  try {
+    await dotenv.load(fileName: "assets/.env");
+  } catch (e) {
+    print("Error loading .env file: $e");
+  }
+
   runApp(MyApp());
 }
 
