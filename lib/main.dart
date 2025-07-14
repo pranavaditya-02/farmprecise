@@ -1,3 +1,4 @@
+import 'package:farmprecise/home1.dart';
 import 'package:farmprecise/pages/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:farmprecise/pages/onboarding/login_page.dart';

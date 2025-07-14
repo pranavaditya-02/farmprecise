@@ -147,5 +147,5 @@ app.get("/croprecommendation", (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server is running on 192.168.102.65:${port}`);
+  console.log(`Server is running on 10.215.63.65:${port}`);
 });

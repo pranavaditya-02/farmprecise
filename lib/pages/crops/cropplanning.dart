@@ -8,11 +8,15 @@ class CropPlanningScreen extends StatefulWidget {
   _CropPlanningScreenState createState() => _CropPlanningScreenState();
 }
 
-class _CropPlanningScreenState extends State<CropPlanningScreen> {
+class _CropPlanningScreenState extends State<CropPlanningScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _locationController = TextEditingController();
   final _farmSizeController = TextEditingController();
   final _additionalNotesController = TextEditingController();
+  final _scrollController = ScrollController();
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
   
   String _selectedCrop = 'Rice';
   String _soilType = 'Loamy';
@@ -31,18 +35,33 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
   
   final List<String> _seasons = ['Kharif', 'Rabi', 'Zaid'];
 
-  // Get API key from environment variables
   String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   Future<void> _generateCropPlan() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Check if API key is available
     if (_apiKey.isEmpty) {
-      setState(() {
-        _result = 'Error: API key not found. Please add GEMINI_API_KEY to your .env file';
-        _isLoading = false;
-      });
+      _showErrorDialog('API Configuration Error', 
+          'Please add GEMINI_API_KEY to your .env file');
       return;
     }
 
@@ -53,62 +72,446 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
 
     try {
       final response = await _callGeminiAPI(
-        "Generate a detailed crop planning schedule for $_selectedCrop in ${_locationController.text}. "
+        "Generate a comprehensive crop planning schedule for $_selectedCrop in ${_locationController.text}. "
         "Farm details: Size: ${_farmSizeController.text} acres, Soil type: $_soilType, Season: $_season. "
-        "Include planting dates, fertilizer schedule, irrigation plan, and harvest timing. "
+        "Please provide detailed information including:\n"
+        "1. Optimal planting dates and timeline\n"
+        "2. Soil preparation requirements\n"
+        "3. Fertilizer schedule with specific quantities\n"
+        "4. Irrigation plan and water requirements\n"
+        "5. Pest management strategies\n"
+        "6. Expected harvest timing and yield\n"
+        "7. Market considerations and pricing\n"
         "Additional notes: ${_additionalNotesController.text}. "
-        "Please provide a comprehensive farming guide with specific recommendations."
+        "Format the response in a clear, structured manner suitable for farmers."
       );
 
       setState(() {
         _result = response;
         _isLoading = false;
       });
+      
+      _animationController.forward();
+      
+      // Auto-scroll to result
+      await Future.delayed(Duration(milliseconds: 300));
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: Duration(milliseconds: 800),
+        curve: Curves.easeInOut,
+      );
     } catch (e) {
       setState(() {
         _result = 'Error: ${e.toString()}';
         _isLoading = false;
       });
+      _showErrorDialog('Generation Error', e.toString());
     }
   }
 
-  // Add this method to display formatted AI response
-  Widget _buildFormattedContent(String content) {
-    return SelectableText(
-      content,
-      style: TextStyle(
-        fontSize: 15,
-        color: Colors.black87,
-        height: 1.5,
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('OK'),
+          ),
+        ],
       ),
     );
   }
 
-  // Helper method to build info chips for quick info bar
-  Widget _buildInfoChip(IconData icon, String label) {
+  Widget _buildFormattedResult(String content) {
+    // Parse and format the content for better readability
+    final sections = _parseContent(content);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header with plan summary
+        Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF2E7D32), Color(0xFF4CAF50)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.agriculture,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Crop Planning Report',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '$_selectedCrop • ${_farmSizeController.text} acres • $_season season',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome, color: Colors.white, size: 16),
+                    SizedBox(width: 4),
+                    Text(
+                      'AI Generated',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        SizedBox(height: 20),
+        
+        // Quick stats cards
+        _buildQuickStatsRow(),
+        
+        SizedBox(height: 24),
+        
+        // Main content sections
+        ...sections.map((section) => _buildContentSection(section)).toList(),
+        
+        SizedBox(height: 24),
+        
+        // Action buttons
+        _buildActionButtons(),
+      ],
+    );
+  }
+
+  Widget _buildQuickStatsRow() {
+    return Row(
+      children: [
+        Expanded(child: _buildStatCard('Location', _locationController.text, Icons.location_on)),
+        SizedBox(width: 12),
+        Expanded(child: _buildStatCard('Soil Type', _soilType, Icons.landscape)),
+        SizedBox(width: 12),
+        Expanded(child: _buildStatCard('Season', _season, Icons.calendar_today)),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, IconData icon) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Color(0xFFE8F5E9),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Color(0xFF4CAF50)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Color(0xFFE8F5E9)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: Color(0xFF388E3C)),
-          SizedBox(width: 5),
+          Icon(icon, color: Color(0xFF4CAF50), size: 20),
+          SizedBox(height: 8),
           Text(
-            label,
+            title,
             style: TextStyle(
-              fontSize: 13,
-              color: Color(0xFF388E3C),
+              fontSize: 12,
+              color: Colors.grey[600],
               fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2E7D32),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContentSection(Map<String, dynamic> section) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  section['icon'] as IconData,
+                  color: Color(0xFF4CAF50),
+                  size: 24,
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    section['title'] as String,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2E7D32),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(20),
+            child: SelectableText(
+              section['content'] as String,
+              style: TextStyle(
+                fontSize: 15,
+                color: Color(0xFF424242),
+                height: 1.6,
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildActionButtons() {
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _saveOrExportPlan(),
+                  icon: Icon(Icons.download, size: 20),
+                  label: Text('Export Plan'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF4CAF50),
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _sharePlan(),
+                  icon: Icon(Icons.share, size: 20),
+                  label: Text('Share Plan'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Color(0xFF4CAF50),
+                    side: BorderSide(color: Color(0xFF4CAF50)),
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: () => _generateNewPlan(),
+            icon: Icon(Icons.refresh, size: 20),
+            label: Text('Generate New Plan'),
+            style: TextButton.styleFrom(
+              foregroundColor: Color(0xFF4CAF50),
+              padding: EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _parseContent(String content) {
+    // Simple content parsing - in a real app, you'd want more sophisticated parsing
+    final sections = <Map<String, dynamic>>[];
+    final lines = content.split('\n');
+    
+    String currentSection = '';
+    String currentContent = '';
+    
+    for (String line in lines) {
+      line = line.trim();
+      if (line.isEmpty) continue;
+      
+      // Check if line looks like a section header
+      if (line.contains('1.') || line.contains('2.') || line.contains('3.') ||
+          line.contains('4.') || line.contains('5.') || line.contains('6.') ||
+          line.contains('7.') || line.toLowerCase().contains('planting') ||
+          line.toLowerCase().contains('fertilizer') || line.toLowerCase().contains('irrigation') ||
+          line.toLowerCase().contains('harvest') || line.toLowerCase().contains('pest')) {
+        
+        // Save previous section if exists
+        if (currentSection.isNotEmpty && currentContent.isNotEmpty) {
+          sections.add(_createSection(currentSection, currentContent));
+        }
+        
+        currentSection = line;
+        currentContent = '';
+      } else {
+        currentContent += line + '\n';
+      }
+    }
+    
+    // Add the last section
+    if (currentSection.isNotEmpty && currentContent.isNotEmpty) {
+      sections.add(_createSection(currentSection, currentContent));
+    }
+    
+    // If no sections were parsed, return the whole content as one section
+    if (sections.isEmpty) {
+      sections.add({
+        'title': 'Crop Planning Recommendations',
+        'content': content,
+        'icon': Icons.agriculture,
+      });
+    }
+    
+    return sections;
+  }
+
+  Map<String, dynamic> _createSection(String title, String content) {
+    IconData icon = Icons.agriculture;
+    
+    if (title.toLowerCase().contains('plant')) {
+      icon = Icons.eco;
+    } else if (title.toLowerCase().contains('fertilizer')) {
+      icon = Icons.science;
+    } else if (title.toLowerCase().contains('irrigation') || title.toLowerCase().contains('water')) {
+      icon = Icons.water_drop;
+    } else if (title.toLowerCase().contains('harvest')) {
+      icon = Icons.grass;
+    } else if (title.toLowerCase().contains('pest')) {
+      icon = Icons.bug_report;
+    } else if (title.toLowerCase().contains('market') || title.toLowerCase().contains('price')) {
+      icon = Icons.trending_up;
+    }
+    
+    return {
+      'title': title,
+      'content': content.trim(),
+      'icon': icon,
+    };
+  }
+
+  void _saveOrExportPlan() {
+    // Implement save/export functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Export functionality will be implemented'),
+        backgroundColor: Color(0xFF4CAF50),
+      ),
+    );
+  }
+
+  void _sharePlan() {
+    // Implement share functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Share functionality will be implemented'),
+        backgroundColor: Color(0xFF4CAF50),
+      ),
+    );
+  }
+
+  void _generateNewPlan() {
+    setState(() {
+      _result = '';
+      _animationController.reset();
+    });
   }
 
   Future<String> _callGeminiAPI(String prompt) async {
@@ -132,7 +535,7 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
         ],
         'generationConfig': {
           'temperature': 0.7,
-          'maxOutputTokens': 1000,
+          'maxOutputTokens': 2000,
           'topP': 0.9,
           'topK': 40
         }
@@ -142,68 +545,12 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       
-      // Debug: Print the response structure
-      print('Gemini API Response: ${response.body}');
-      
-      // Extract text from Gemini API response with detailed debugging
       try {
-        // Check if response has candidates
-        if (data['candidates'] == null) {
-          print('No candidates found in response');
-          return 'Error: No candidates in API response';
-        }
-        
-        if (data['candidates'].isEmpty) {
-          print('Candidates array is empty');
-          return 'Error: Empty candidates array';
-        }
-        
-        final candidate = data['candidates'][0];
-        print('First candidate: $candidate');
-        
-        // Check if candidate has content
-        if (candidate['content'] == null) {
-          print('No content found in candidate');
-          return 'Error: No content in candidate';
-        }
-        
-        final content = candidate['content'];
-        print('Content: $content');
-        
-        // Check if content has parts
-        if (content['parts'] == null) {
-          print('No parts found in content');
-          return 'Error: No parts in content';
-        }
-        
-        if (content['parts'].isEmpty) {
-          print('Parts array is empty');
-          return 'Error: Empty parts array';
-        }
-        
-        final part = content['parts'][0];
-        print('First part: $part');
-        
-        // Check if part has text
-        if (part['text'] == null) {
-          print('No text found in part');
-          return 'Error: No text in part';
-        }
-        
-        final text = part['text'];
-        print('Extracted text: $text');
-        
-        return text;
-        
+        return data['candidates'][0]['content']['parts'][0]['text'];
       } catch (e) {
-        print('Error parsing response: $e');
-        print('Full response data: $data');
         return 'Error parsing response: $e';
       }
     } else {
-      print('HTTP Error: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-      
       try {
         final errorData = jsonDecode(response.body);
         final errorMessage = errorData['error']?['message'] ?? 'Unknown error';
@@ -217,366 +564,284 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: Text('Crop Planning'),
-        backgroundColor: Color(0xFF2E7D32),
-        elevation: 0,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF2E7D32),
-              Color(0xFFF1F8E9),
-            ],
-            stops: [0.0, 0.3],
-          ),
+        title: Text(
+          'Smart Crop Planning',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Card
-                Card(
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+        backgroundColor: Color(0xFF2E7D32),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        controller: _scrollController,
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Hero section
+              _buildHeroSection(),
+              SizedBox(height: 24),
+              
+              // Input forms
+              _buildInputSection(),
+              SizedBox(height: 24),
+              
+              // Generate button
+              _buildGenerateButton(),
+              SizedBox(height: 32),
+              
+              // Results section
+              if (_result.isNotEmpty)
+                AnimatedBuilder(
+                  animation: _fadeAnimation,
+                  builder: (context, child) {
+                    return Opacity(
+                      opacity: _fadeAnimation.value,
+                      child: Transform.translate(
+                        offset: Offset(0, 20 * (1 - _fadeAnimation.value)),
+                        child: _buildFormattedResult(_result),
                       ),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(Icons.agriculture, size: 50, color: Colors.white),
-                        SizedBox(height: 10),
-                        Text(
-                          'Smart Crop Planning',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          'Get AI-powered planting schedules',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                    );
+                  },
                 ),
-                SizedBox(height: 25),
-                
-                // Form Fields
-                _buildInputCard([
-                  _buildDropdownField(
-                    'Select Crop',
-                    _selectedCrop,
-                    _crops,
-                    (value) => setState(() => _selectedCrop = value!),
-                    Icons.eco,
-                  ),
-                  SizedBox(height: 15),
-                  _buildTextFormField(
-                    'Location',
-                    _locationController,
-                    'Enter your farm location',
-                    Icons.location_on,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter location';
-                      }
-                      return null;
-                    },
-                  ),
-                ]),
-                
-                SizedBox(height: 20),
-                
-                _buildInputCard([
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildDropdownField(
-                          'Soil Type',
-                          _soilType,
-                          _soilTypes,
-                          (value) => setState(() => _soilType = value!),
-                          Icons.landscape,
-                        ),
-                      ),
-                      SizedBox(width: 15),
-                      Expanded(
-                        child: _buildDropdownField(
-                          'Season',
-                          _season,
-                          _seasons,
-                          (value) => setState(() => _season = value!),
-                          Icons.calendar_today,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 15),
-                  _buildTextFormField(
-                    'Farm Size (acres)',
-                    _farmSizeController,
-                    'Enter farm size in acres',
-                    Icons.square_foot,
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter farm size';
-                      }
-                      return null;
-                    },
-                  ),
-                ]),
-                
-                SizedBox(height: 20),
-                
-                _buildInputCard([
-                  _buildTextFormField(
-                    'Additional Notes (Optional)',
-                    _additionalNotesController,
-                    'Any specific requirements or conditions',
-                    Icons.note,
-                    maxLines: 3,
-                  ),
-                ]),
-                
-                SizedBox(height: 30),
-                
-                // Generate Button
-                Container(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _generateCropPlan,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF4CAF50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      elevation: 8,
-                    ),
-                    child: _isLoading
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              Text('Generating Plan...'),
-                            ],
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.auto_awesome, size: 24),
-                              SizedBox(width: 10),
-                              Text(
-                                'Generate Crop Plan',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
-                
-                SizedBox(height: 30),
-                
-                // Result Card
-                if (_result.isNotEmpty)
-                  Card(
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(15),
-                        gradient: LinearGradient(
-                          colors: [Colors.white, Color(0xFFF8FFF8)],
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header with enhanced styling
-                          Container(
-                            padding: EdgeInsets.all(15),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.agriculture, color: Colors.white, size: 28),
-                                SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'AI-Generated Crop Planning Schedule',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    'Powered by Gemini',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: 20),
-                          
-                          // Formatted content
-                          Container(
-                            padding: EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Color(0xFFF9F9F9),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Color(0xFFE0E0E0)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Quick Info Bar
-                                Row(
-                                  children: [
-                                    _buildInfoChip(Icons.eco, 'Crop: $_selectedCrop'),
-                                    SizedBox(width: 8),
-                                    _buildInfoChip(Icons.landscape, 'Soil: $_soilType'),
-                                  ],
-                                ),
-                                SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    _buildInfoChip(Icons.calendar_today, 'Season: $_season'),
-                                    SizedBox(width: 8),
-                                    _buildInfoChip(Icons.square_foot, 'Size: ${_farmSizeController.text} acres'),
-                                  ],
-                                ),
-                                SizedBox(height: 20),
-                                
-                                // Formatted AI Response
-                                Container(
-                                  width: double.infinity,
-                                  child: _buildFormattedContent(_result),
-                                ),
-                              ],
-                            ),
-                          ),
-                          
-                          SizedBox(height: 20),
-                          
-                          // Action Buttons
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    // Add functionality to save or share
-                                  },
-                                  icon: Icon(Icons.save_alt, size: 18),
-                                  label: Text('Save Plan'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Color(0xFF4CAF50),
-                                    foregroundColor: Colors.white,
-                                    padding: EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: () {
-                                    // Add functionality to share
-                                  },
-                                  icon: Icon(Icons.share, size: 18),
-                                  label: Text('Share'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Color(0xFF4CAF50),
-                                    side: BorderSide(color: Color(0xFF4CAF50)),
-                                    padding: EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildInputCard(List<Widget> children) {
-    return Card(
-      elevation: 6,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          color: Colors.white,
+  Widget _buildHeroSection() {
+    return Container(
+      padding: EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF2E7D32), Color(0xFF4CAF50)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Column(children: children),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.agriculture,
+            size: 48,
+            color: Colors.white,
+          ),
+          SizedBox(height: 16),
+          Text(
+            'AI-Powered Crop Planning',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Get personalized farming recommendations based on your location, soil type, and season',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.white.withOpacity(0.9),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputSection() {
+    return Column(
+      children: [
+        _buildInputCard([
+          _buildDropdownField(
+            'Select Crop',
+            _selectedCrop,
+            _crops,
+            (value) => setState(() => _selectedCrop = value!),
+            Icons.eco,
+          ),
+          SizedBox(height: 20),
+          _buildTextFormField(
+            'Farm Location',
+            _locationController,
+            'Enter your farm location (city, state)',
+            Icons.location_on,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your farm location';
+              }
+              return null;
+            },
+          ),
+        ]),
+        
+        SizedBox(height: 16),
+        
+        _buildInputCard([
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Use Column layout for small screens, Row for larger screens
+              if (constraints.maxWidth < 400) {
+                return Column(
+                  children: [
+                    _buildDropdownField(
+                      'Soil Type',
+                      _soilType,
+                      _soilTypes,
+                      (value) => setState(() => _soilType = value!),
+                      Icons.landscape,
+                    ),
+                    SizedBox(height: 16),
+                    _buildDropdownField(
+                      'Season',
+                      _season,
+                      _seasons,
+                      (value) => setState(() => _season = value!),
+                      Icons.calendar_today,
+                    ),
+                  ],
+                );
+              } else {
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _buildDropdownField(
+                        'Soil Type',
+                        _soilType,
+                        _soilTypes,
+                        (value) => setState(() => _soilType = value!),
+                        Icons.landscape,
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: _buildDropdownField(
+                        'Season',
+                        _season,
+                        _seasons,
+                        (value) => setState(() => _season = value!),
+                        Icons.calendar_today,
+                      ),
+                    ),
+                  ],
+                );
+              }
+            },
+          ),
+          SizedBox(height: 20),
+          _buildTextFormField(
+            'Farm Size',
+            _farmSizeController,
+            'Enter area in acres',
+            Icons.square_foot,
+            keyboardType: TextInputType.number,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter farm size';
+              }
+              if (double.tryParse(value) == null) {
+                return 'Please enter a valid number';
+              }
+              return null;
+            },
+          ),
+        ]),
+        
+        SizedBox(height: 16),
+        
+        _buildInputCard([
+          _buildTextFormField(
+            'Additional Notes',
+            _additionalNotesController,
+            'Any specific requirements, local conditions, or concerns',
+            Icons.notes,
+            maxLines: 3,
+          ),
+        ]),
+      ],
+    );
+  }
+
+  Widget _buildGenerateButton() {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _generateCropPlan,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xFF4CAF50),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 0,
+          disabledBackgroundColor: Colors.grey[300],
+        ),
+        child: _isLoading
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'Generating Your Plan...',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.auto_awesome, size: 24),
+                  SizedBox(width: 12),
+                  Text(
+                    'Generate Crop Plan',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildInputCard(List<Widget> children) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(children: children),
     );
   }
 
@@ -608,17 +873,27 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey[400]),
             prefixIcon: Icon(icon, color: Color(0xFF4CAF50)),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Color(0xFF4CAF50)),
+              borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Color(0xFFE0E0E0)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Color(0xFF2E7D32), width: 2),
+              borderSide: BorderSide(color: Color(0xFF4CAF50), width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red, width: 1),
             ),
             filled: true,
-            fillColor: Color(0xFFF8F9FA),
+            fillColor: Color(0xFFFAFAFA),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
         ),
       ],
@@ -647,8 +922,8 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            color: Color(0xFFF8F9FA),
-            border: Border.all(color: Color(0xFF4CAF50)),
+            color: Color(0xFFFAFAFA),
+            border: Border.all(color: Color(0xFFE0E0E0)),
           ),
           child: DropdownButtonFormField<String>(
             value: value,
@@ -656,12 +931,15 @@ class _CropPlanningScreenState extends State<CropPlanningScreen> {
             decoration: InputDecoration(
               prefixIcon: Icon(icon, color: Color(0xFF4CAF50)),
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(vertical: 15),
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
             items: items.map((item) {
               return DropdownMenuItem(
                 value: item,
-                child: Text(item),
+                child: Text(
+                  item,
+                  style: TextStyle(fontSize: 16),
+                ),
               );
             }).toList(),
           ),

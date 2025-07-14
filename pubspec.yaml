@@ -23,6 +23,7 @@ dependencies:
   tflite_v2: ^1.0.0
   loading_animation_widget: ^1.3.0
   flutter_dotenv: ^5.2.1
+  speech_to_text: ^7.1.0
 
 
 dev_dependencies:
