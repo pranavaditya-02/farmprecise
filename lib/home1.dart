@@ -3,7 +3,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // Add this import
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
@@ -47,8 +47,7 @@ class _FarmingChatbotState extends State<FarmingChatbot>
   bool _isProcessing = false;
   bool _isSpeaking = false;
   String _selectedLanguage = 'en-IN';
-  String _geminiApiKey = 'AIzaSyCJJ1esglN4bxEtSGHN7a0tGCEHE4nG-cQ';
-  bool _isApiKeyConfigured = false;
+  late final String _geminiApiKey;
   
   late AnimationController _pulseController;
   late AnimationController _typingController;
@@ -71,8 +70,8 @@ class _FarmingChatbotState extends State<FarmingChatbot>
   @override
   void initState() {
     super.initState();
+    _geminiApiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
     _initializeAnimations();
-    _loadApiKey();
     _initializeSpeech();
     _initializeTts();
     _addWelcomeMessage();
@@ -104,22 +103,6 @@ class _FarmingChatbotState extends State<FarmingChatbot>
       parent: _typingController,
       curve: Curves.easeInOut,
     ));
-  }
-
-  Future<void> _loadApiKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedApiKey = prefs.getString('gemini_api_key');
-    if (savedApiKey != null && savedApiKey.isNotEmpty) {
-      setState(() {
-        _geminiApiKey = savedApiKey;
-        _isApiKeyConfigured = true;
-      });
-    }
-  }
-
-  Future<void> _saveApiKey(String apiKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('gemini_api_key', apiKey);
   }
 
   void _addWelcomeMessage() {
@@ -221,8 +204,8 @@ class _FarmingChatbotState extends State<FarmingChatbot>
   Future<void> _sendMessage(String message, MessageType type) async {
     if (message.trim().isEmpty) return;
 
-    if (!_isApiKeyConfigured) {
-      _showApiKeyDialog();
+    if (_geminiApiKey.isEmpty) {
+      _showSnackBar('Gemini API key not configured. Please set GEMINI_API_KEY in your .env file.');
       return;
     }
 
@@ -488,93 +471,6 @@ Focus on practical, science-based advice for optimal crop management.
     );
   }
 
-  void _showApiKeyDialog() {
-    String tempApiKey = _geminiApiKey;
-    final controller = TextEditingController(text: tempApiKey);
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(Icons.vpn_key, color: Theme.of(context).primaryColor),
-            const SizedBox(width: 8),
-            const Text('API Configuration'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                labelText: 'Gemini API Key',
-                hintText: 'Enter your Gemini API key',
-                prefixIcon: const Icon(Icons.security),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onChanged: (value) => tempApiKey = value,
-              obscureText: true,
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Get your API key:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '1. Visit Google AI Studio\n2. Create a new API key\n3. Copy and paste it here',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.blue.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (tempApiKey.isNotEmpty) {
-                await _saveApiKey(tempApiKey);
-                setState(() {
-                  _geminiApiKey = tempApiKey;
-                  _isApiKeyConfigured = true;
-                });
-                Navigator.pop(context);
-                _showSnackBar('API key configured successfully!');
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -606,14 +502,6 @@ Focus on practical, science-based advice for optimal crop management.
           ],
         ),
         actions: [
-          IconButton(
-            icon: Icon(
-              _isApiKeyConfigured ? Icons.verified : Icons.warning,
-              color: _isApiKeyConfigured ? Colors.green.shade200 : Colors.orange.shade200,
-            ),
-            onPressed: _showApiKeyDialog,
-            tooltip: _isApiKeyConfigured ? 'API Configured' : 'Configure API Key',
-          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.language, color: Colors.white),
             onSelected: (String value) {
@@ -653,23 +541,6 @@ Focus on practical, science-based advice for optimal crop management.
                 Text(
                   'Language: ${_languages[_selectedLanguage]?.split(' ')[0] ?? 'English'}',
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-                Row(
-                  children: [
-                    Icon(
-                      _isApiKeyConfigured ? Icons.cloud_done : Icons.cloud_off,
-                      color: _isApiKeyConfigured ? Colors.green.shade200 : Colors.red.shade200,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _isApiKeyConfigured ? 'Connected' : 'Disconnected',
-                      style: TextStyle(
-                        color: _isApiKeyConfigured ? Colors.green.shade200 : Colors.red.shade200,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
