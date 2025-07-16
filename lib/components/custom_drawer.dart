@@ -9,6 +9,7 @@ import 'package:farmprecise/pages/crops/cropcalendar.dart';
 import 'package:farmprecise/pages/rent/rentpage.dart';
 import 'package:farmprecise/pages/marketprice/mandiPrice.dart';
 import 'package:farmprecise/main.dart';
+import 'package:farmprecise/pages/chatbot/chatbotscreen.dart';
 
 class CustomDrawer extends StatelessWidget {
   final Function(int) onItemTapped;
@@ -145,15 +146,15 @@ class CustomDrawer extends StatelessWidget {
               },
             ),
               ListTile(
-              leading: Icon(Icons.currency_rupee, color: Colors.green), // or Icons.attach_money
-              title: Text('Pest management'),
+              leading: Icon(Icons.chat, color: Colors.green), // or Icons.attach_money
+              title: Text('Chat Bot'),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
 
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => PestManagementScreen()),
+                      builder: (context) => FarmingChatbot()),
                 );
               },
             ),

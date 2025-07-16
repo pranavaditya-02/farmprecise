@@ -3,7 +3,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // Add this import
+import 'package:flutter_dotenv/flutter_dotenv.dart'; 
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
@@ -67,6 +67,12 @@ class _FarmingChatbotState extends State<FarmingChatbot>
     'pa-IN': 'ਪੰਜਾਬੀ (Punjabi)',
   };
 
+  bool _ttsRequested = false; // Track if user requested TTS
+
+  // Add these fields to your _FarmingChatbotState class:
+  String? _ttsText;
+  int _ttsCharIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -129,7 +135,6 @@ class _FarmingChatbotState extends State<FarmingChatbot>
         }
       },
       onError: (error) {
-        print('Speech recognition error: $error');
         setState(() {
           _isListening = false;
         });
@@ -137,10 +142,62 @@ class _FarmingChatbotState extends State<FarmingChatbot>
         _showSnackBar('Speech recognition error: ${error.errorMsg}');
       },
     );
-    
     if (!available) {
       _showSnackBar('Speech recognition not available on this device');
     }
+  }
+
+  Future<void> _startListening() async {
+    if (!_speechToText.isAvailable) {
+      _showSnackBar('Speech recognition not available');
+      return;
+    }
+    if (!_isListening) {
+      setState(() {
+        _recognizedText = '';
+      });
+      await _speechToText.listen(
+        onResult: (result) {
+          setState(() {
+            _recognizedText = result.recognizedWords;
+          });
+          // Auto-submit when speech is finalized
+          if (result.finalResult && _recognizedText.trim().isNotEmpty) {
+            _stopListening(); // This will call _sendMessage
+          }
+        },
+        localeId: _selectedLanguage,
+        listenFor: const Duration(seconds: 15),
+        pauseFor: const Duration(seconds: 2),
+        partialResults: true,
+      );
+    }
+  }
+
+  Future<void> _stopListening() async {
+    await _speechToText.stop();
+    if (_recognizedText.trim().isNotEmpty) {
+      _sendMessage(_recognizedText, MessageType.voice);
+      setState(() {
+        _recognizedText = '';
+      });
+    }
+  }
+
+  Future<void> _speakResponse(String text) async {
+    if (_isSpeaking) {
+      await _flutterTts.stop();
+      setState(() {
+        _isSpeaking = false;
+        _ttsRequested = false;
+      });
+      return;
+    }
+    setState(() {
+      _ttsRequested = true;
+    });
+    await _flutterTts.setLanguage(_selectedLanguage);
+    await _flutterTts.speak(text);
   }
 
   Future<void> _initializeTts() async {
@@ -158,47 +215,16 @@ class _FarmingChatbotState extends State<FarmingChatbot>
     _flutterTts.setCompletionHandler(() {
       setState(() {
         _isSpeaking = false;
+        _ttsRequested = false;
       });
     });
 
     _flutterTts.setErrorHandler((msg) {
       setState(() {
         _isSpeaking = false;
+        _ttsRequested = false;
       });
     });
-  }
-
-  Future<void> _startListening() async {
-    if (!_speechToText.isAvailable) {
-      _showSnackBar('Speech recognition not available');
-      return;
-    }
-
-    if (!_isListening) {
-      setState(() {
-        _recognizedText = '';
-      });
-      
-      await _speechToText.listen(
-        onResult: (result) {
-          setState(() {
-            _recognizedText = result.recognizedWords;
-          });
-        },
-        localeId: _selectedLanguage,
-        listenFor: const Duration(seconds: 15),
-        pauseFor: const Duration(seconds: 2),
-        partialResults: true,
-      );
-    }
-  }
-
-  Future<void> _stopListening() async {
-    await _speechToText.stop();
-    
-    if (_recognizedText.isNotEmpty) {
-      _sendMessage(_recognizedText, MessageType.voice);
-    }
   }
 
   Future<void> _sendMessage(String message, MessageType type) async {
@@ -451,16 +477,6 @@ Focus on practical, science-based advice for optimal crop management.
     });
   }
 
-  Future<void> _speakResponse(String text) async {
-    if (_isSpeaking) {
-      await _flutterTts.stop();
-      return;
-    }
-
-    await _flutterTts.setLanguage(_selectedLanguage);
-    await _flutterTts.speak(text);
-  }
-
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -473,354 +489,348 @@ Focus on practical, science-based advice for optimal crop management.
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFF2E7D32),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: const Color(0xFF2E7D32),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.agriculture, color: Colors.white, size: 24),
               ),
-              child: const Icon(Icons.agriculture, color: Colors.white, size: 24),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'AgriSense AI',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'AgriSense AI',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
                 ),
               ),
+            ],
+          ),
+          actions: [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.language, color: Colors.white),
+              onSelected: (String value) {
+                setState(() {
+                  _selectedLanguage = value;
+                });
+                _initializeTts();
+              },
+              itemBuilder: (BuildContext context) {
+                return _languages.entries.map((entry) {
+                  return PopupMenuItem<String>(
+                    value: entry.key,
+                    child: Text(entry.value),
+                  );
+                }).toList();
+              },
             ),
           ],
         ),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.language, color: Colors.white),
-            onSelected: (String value) {
-              setState(() {
-                _selectedLanguage = value;
-              });
-              _initializeTts();
-            },
-            itemBuilder: (BuildContext context) {
-              return _languages.entries.map((entry) {
-                return PopupMenuItem<String>(
-                  value: entry.key,
-                  child: Text(entry.value),
-                );
-              }).toList();
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Status bar
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF2E7D32),
-                  const Color(0xFF388E3C),
-                ],
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            return Column(
               children: [
-                Text(
-                  'Language: ${_languages[_selectedLanguage]?.split(' ')[0] ?? 'English'}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                // Status bar
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF2E7D32),
+                        const Color(0xFF388E3C),
+                      ],
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Language: ${_languages[_selectedLanguage]?.split(' ')[0] ?? 'English'}',
+                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-          ),
-          
-          // Chat messages
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                return _buildMessageBubble(message);
-              },
-            ),
-          ),
-          
-          // Processing indicator
-          if (_isProcessing)
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AnimatedBuilder(
-                    animation: _typingAnimation,
-                    builder: (context, child) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  const Color(0xFF2E7D32),
-                                ),
-                                strokeWidth: 2,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'AI is analyzing...',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
+                // Chat messages
+                Expanded(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final message = _messages[index];
+                      return _buildMessageBubble(message, constraints.maxWidth);
                     },
                   ),
-                ],
-              ),
-            ),
-          
-          // Input area
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
                 ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Voice recognition indicator
-                if (_isListening)
+                // Processing indicator
+                if (_isProcessing)
                   Container(
-                    padding: const EdgeInsets.all(12),
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF2E7D32).withOpacity(0.1),
-                          const Color(0xFF4CAF50).withOpacity(0.1),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.3)),
-                    ),
+                    padding: const EdgeInsets.all(16),
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         AnimatedBuilder(
-                          animation: _pulseAnimation,
+                          animation: _typingAnimation,
                           builder: (context, child) {
-                            return Transform.scale(
-                              scale: _pulseAnimation.value,
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF4CAF50),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.mic,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        const Color(0xFF2E7D32),
+                                      ),
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text(
+                                    'AI is analyzing...',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
                               ),
                             );
                           },
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Listening...',
-                                style: TextStyle(
-                                  color: Color(0xFF2E7D32),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (_recognizedText.isNotEmpty)
-                                Text(
-                                  _recognizedText,
-                                  style: const TextStyle(
-                                    color: Color(0xFF4CAF50),
-                                    fontSize: 14,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                   ),
-                
-                // Input row
-                Row(
-                  children: [
-                    // Image picker button
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2E7D32).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+                // Input area
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -5),
                       ),
-                      child: IconButton(
-                        onPressed: () {
-                          showModalBottomSheet(
-                            context: context,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      if (_isListening)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF2E7D32).withOpacity(0.1),
+                                const Color(0xFF4CAF50).withOpacity(0.1),
+                              ],
                             ),
-                            builder: (context) => Container(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'Select Image Source',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              AnimatedBuilder(
+                                animation: _pulseAnimation,
+                                builder: (context, child) {
+                                  return Transform.scale(
+                                    scale: _pulseAnimation.value,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF4CAF50),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.mic,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Listening...',
+                                      style: TextStyle(
+                                        color: Color(0xFF2E7D32),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    if (_recognizedText.isNotEmpty)
+                                      Text(
+                                        _recognizedText,
+                                        style: const TextStyle(
+                                          color: Color(0xFF4CAF50),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      Row(
+                        children: [
+                          // Image picker button
+                          Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2E7D32).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: IconButton(
+                              onPressed: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                  ),
+                                  builder: (context) => Container(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Text(
+                                          'Select Image Source',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: ElevatedButton.icon(
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                  _takePhoto();
+                                                },
+                                                icon: const Icon(Icons.camera_alt),
+                                                label: const Text('Camera'),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: const Color(0xFF2E7D32),
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets.all(16),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: ElevatedButton.icon(
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                  _pickImage();
+                                                },
+                                                icon: const Icon(Icons.photo_library),
+                                                label: const Text('Gallery'),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: const Color(0xFF388E3C),
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets.all(16),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(height: 20),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: ElevatedButton.icon(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                            _takePhoto();
-                                          },
-                                          icon: const Icon(Icons.camera_alt),
-                                          label: const Text('Camera'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF2E7D32),
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.all(16),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: ElevatedButton.icon(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                            _pickImage();
-                                          },
-                                          icon: const Icon(Icons.photo_library),
-                                          label: const Text('Gallery'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF388E3C),
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.all(16),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                );
+                              },
+                              icon: const Icon(Icons.add_a_photo, color: Color(0xFF2E7D32)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Text input
+                          Expanded(
+                            child: TextField(
+                              controller: _textController,
+                              decoration: InputDecoration(
+                                hintText: 'Ask about crops, diseases, market prices...',
+                                hintStyle: TextStyle(color: Colors.grey.shade500),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                  borderSide: BorderSide.none,
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade100,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              ),
+                              onSubmitted: (text) => _sendMessage(text, MessageType.text),
+                              minLines: 1,
+                              maxLines: 3,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Voice button
+                          Container(
+                            decoration: BoxDecoration(
+                              color: _isListening ? Colors.red.shade100 : const Color(0xFF2E7D32).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: IconButton(
+                              onPressed: _isListening ? _stopListening : _startListening,
+                              icon: Icon(
+                                _isListening ? Icons.stop : Icons.mic,
+                                color: _isListening ? Colors.red : const Color(0xFF2E7D32),
                               ),
                             ),
-                          );
-                        },
-                        icon: const Icon(Icons.add_a_photo, color: Color(0xFF2E7D32)),
-                      ),
-                    ),
-                    
-                    const SizedBox(width: 12),
-                    
-                    // Text input
-                    Expanded(
-                      child: TextField(
-                        controller: _textController,
-                        decoration: InputDecoration(
-                          hintText: 'Ask about crops, diseases, market prices...',
-                          hintStyle: TextStyle(color: Colors.grey.shade500),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(25),
-                            borderSide: BorderSide.none,
                           ),
-                          filled: true,
-                          fillColor: Colors.grey.shade100,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                        ),
-                        onSubmitted: (text) => _sendMessage(text, MessageType.text),
-                        minLines: 1,
-                        maxLines: 3,
+                          const SizedBox(width: 8),
+                          // Send button
+                          Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2E7D32),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: IconButton(
+                              onPressed: () => _sendMessage(_textController.text, MessageType.text),
+                              icon: const Icon(Icons.send, color: Colors.white),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    
-                    const SizedBox(width: 12),
-                    
-                    // Voice button
-                    Container(
-                      decoration: BoxDecoration(
-                        color: _isListening ? Colors.red.shade100 : const Color(0xFF2E7D32).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: IconButton(
-                        onPressed: _isListening ? _stopListening : _startListening,
-                        icon: Icon(
-                          _isListening ? Icons.stop : Icons.mic,
-                          color: _isListening ? Colors.red : const Color(0xFF2E7D32),
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(width: 8),
-                    
-                    // Send button
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2E7D32),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: IconButton(
-                        onPressed: () => _sendMessage(_textController.text, MessageType.text),
-                        icon: const Icon(Icons.send, color: Colors.white),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message) {
+  Widget _buildMessageBubble(ChatMessage message, double maxWidth) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -843,9 +853,11 @@ Focus on practical, science-based advice for optimal crop management.
             ),
             const SizedBox(width: 12),
           ],
-          
           Flexible(
             child: Container(
+              constraints: BoxConstraints(
+                maxWidth: maxWidth * 0.75,
+              ),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: message.isUser 
@@ -880,7 +892,6 @@ Focus on practical, science-based advice for optimal crop management.
                     ),
                     const SizedBox(height: 12),
                   ],
-                  
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -900,7 +911,6 @@ Focus on practical, science-based advice for optimal crop management.
                           ),
                         ),
                       if (message.type == MessageType.voice) const SizedBox(width: 8),
-                      
                       Expanded(
                         child: Text(
                           message.text,
@@ -913,9 +923,7 @@ Focus on practical, science-based advice for optimal crop management.
                       ),
                     ],
                   ),
-                  
                   const SizedBox(height: 12),
-                  
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -926,18 +934,21 @@ Focus on practical, science-based advice for optimal crop management.
                           fontSize: 12,
                         ),
                       ),
-                      
                       if (!message.isUser)
                         Row(
                           children: [
                             IconButton(
                               onPressed: () => _speakResponse(message.text),
                               icon: Icon(
-                                _isSpeaking ? Icons.volume_off : Icons.volume_up,
+                                (_isSpeaking && _ttsRequested)
+                                    ? Icons.volume_off
+                                    : Icons.volume_up,
                                 size: 18,
                                 color: Colors.grey[600],
                               ),
-                              tooltip: _isSpeaking ? 'Stop speaking' : 'Read aloud',
+                              tooltip: (_isSpeaking && _ttsRequested)
+                                  ? 'Stop speaking'
+                                  : 'Read aloud',
                             ),
                           ],
                         ),
@@ -947,7 +958,6 @@ Focus on practical, science-based advice for optimal crop management.
               ),
             ),
           ),
-          
           if (message.isUser) ...[
             const SizedBox(width: 12),
             Container(
