@@ -1,34 +1,37 @@
 # Farm Precise
 
-Empowering Farmers with AI, Automation, and Multilingual Support — Anytime, Anywhere.
+Empowering Farmers with AI, Automation and Multilingual Support — Anytime, Anywhere.
 
 ## Table of Contents
 
-- Introduction
-- Key Features
-- Technologies Used
-- Contributors
-- Contact
-- Vision & Impact
+- [Introduction](#introduction)
+- [Key Features](#key-features)
+  - [Smart Farming & AI-Powered Intelligence](#smart-farming--ai-powered-intelligence)
+  - [Farm Precise Hena – Intelligent Chat Assistant](#farm-precise-hena--intelligent-chat-assistant)
+  - [Analytics & Market Support](#analytics--market-support)
+- [Technologies Used](#technologies-used)
+- [Contributors](#contributors)
+- [Contact](#contact)
+- [Vision & Impact](#vision--impact)
 
 ## Introduction
 
 Farm Precise is a next-generation precision agriculture platform that transforms traditional farming into a smart, data-driven experience — through the integration of AI, autonomous IoT devices and an inclusive, multilingual cross-platform mobile application.
 
-Developed with the Indian agricultural ecosystem in mind, Farm Precise is built to solve real challenges like crop planning, disease detection, market fluctuations, and isolation from farming communities — all while being accessible offline, in local languages and on any device.
+Developed with the Indian agricultural ecosystem in mind, Farm Precise is built to solve real challenges like crop planning, disease detection, market fluctuations and isolation from farming communities — all while being accessible offline, in local languages and on any device.
 
 ## Key Features
 
 ### Smart Farming & AI-Powered Intelligence
 
 - Autonomous Device Integration  
-  Real-time control of smart irrigation systems, soil sensors, weather stations, drones and more.
+  Real-time control of smart irrigation systems, soil sensors, weather stations, drones.
 
 - ML-Driven Crop Suggestion & Planning  
   Powered by TensorFlow and Gemini APIs, the system recommends crops based on soil type, location and climate.
 
 - Crop Scanner with Disease & Weed Detection  
-  Upload or scan a crop image to instantly detect diseases, nutrient deficiencies, or weed threats — along with tailored treatments.
+  Upload or scan a crop image to instantly detect diseases, nutrient deficiencies or weed threats — along with tailored treatments.
 
 - Remedy & Treatment Planner  
   Get instant organic/chemical treatment suggestions based on crop condition.
@@ -40,7 +43,7 @@ Developed with the Indian agricultural ecosystem in mind, Farm Precise is built 
 Key capabilities include:
 
 - **Smart Conversations**  
-  Ask any question related to crops, weather, soil, treatment, irrigation, or market prices — and get reliable answers instantly.
+  Ask any question related to crops, weather, soil, treatment, irrigation or market prices — and get reliable answers instantly.
 
 - **Image Upload Support**  
   Share crop images for disease detection or weed classification directly through chat.
@@ -49,13 +52,13 @@ Key capabilities include:
   Talk to Hena in your native language. Converts voice to text and responds back with spoken guidance using text-to-speech.
 
 - **Document Analysis**  
-  Upload PDFs or text files like soil reports, weather summaries, or government policies — and get simplified insights from them.
+  Upload PDFs or text files like soil reports, weather summaries or government policies — and get simplified insights from them.
 
 - **Multilingual & Offline Capabilities**  
-  Supports Tamil, Hindi, Telugu, Kannada, Bengali, English, and more. Key features work without internet connectivity.
+  Supports Tamil, Hindi, Telugu, Kannada, Bengali, English and more. Key features work without internet connectivity.
 
 - **Personalized Guidance**  
-  Based on location, crop history, and weather — Hena tailors suggestions specifically for each farmer.
+  Based on location, crop history and weather — Hena tailors suggestions specifically for each farmer.
 
 ### Analytics & Market Support
 
@@ -86,22 +89,22 @@ Key capabilities include:
 
 Built with dedication by:
 
-- Pranav Aditya (https://github.com/pranavaditya-02)  
-- M Hemasri Murugakani (https://github.com/HemasriMurugakani)
+- [Pranav Aditya](https://github.com/pranavaditya-02)  
+- [M Hemasri Murugakani](https://github.com/HemasriMurugakani)
 
 Special thanks to farmers and domain experts who guided our problem understanding.
 
 ## Contact
 
-For questions, support, or collaboration, contact:
+For questions, support or collaboration, contact:
 
 Emails:  
 pspranavadityacvm@gmail.com  
 hemaleena1102@gmail.com
 
 GitHub:  
-@pranavaditya-02  
-@HemasriMurugakani
+[@pranavaditya-02](https://github.com/pranavaditya-02)  
+[@HemasriMurugakani](https://github.com/HemasriMurugakani)
 
 ## Vision & Impact
 
@@ -112,7 +115,7 @@ A step toward Zero Hunger, climate-smart farming and equity in access to agricul
 We aim to create a farming ecosystem where:
 
 - Every farmer, regardless of literacy or location, has access to advanced tools  
-- Resource use is optimized to conserve water, soil, and effort  
+- Resource use is optimized to conserve water, soil and effort  
 - AI and community-driven support empowers better decisions  
 - Language is never a barrier  
 - Food insecurity becomes a thing of the past
