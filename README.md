@@ -98,13 +98,9 @@ Special thanks to farmers and domain experts who guided our problem understandin
 
 For questions, support or collaboration, contact:
 
-Emails:  
 pspranavadityacvm@gmail.com  
 hemaleena1102@gmail.com
 
-GitHub:  
-[@pranavaditya-02](https://github.com/pranavaditya-02)  
-[@HemasriMurugakani](https://github.com/HemasriMurugakani)
 
 ## Vision & Impact
 
