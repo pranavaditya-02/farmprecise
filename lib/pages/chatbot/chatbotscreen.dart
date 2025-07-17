@@ -12,7 +12,6 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:farmprecise/pages/homepage.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
-
 class FarmingChatbot extends StatefulWidget {
   const FarmingChatbot({Key? key}) : super(key: key);
 
@@ -132,46 +131,6 @@ class _FarmingChatbotState extends State<FarmingChatbot>
       ));
     });
   }
-  String _stripMarkdownForTts(String markdownText) {
-  String cleanText = markdownText;
-  
-  // Remove markdown headers (## ### etc.)
-  cleanText = cleanText.replaceAll(RegExp(r'^#{1,6}\s*'), '');
-  cleanText = cleanText.replaceAll(RegExp(r'#{1,6}\s*'), '');
-  
-  // Remove bold and italic formatting
-  cleanText = cleanText.replaceAll(RegExp(r'\*\*([^*]+)\*\*'), r'$1');
-  cleanText = cleanText.replaceAll(RegExp(r'\*([^*]+)\*'), r'$1');
-  cleanText = cleanText.replaceAll(RegExp(r'__([^_]+)__'), r'$1');
-  cleanText = cleanText.replaceAll(RegExp(r'_([^_]+)_'), r'$1');
-  
-  // Remove code blocks and inline code
-  cleanText = cleanText.replaceAll(RegExp(r'```[^`]*```'), '');
-  cleanText = cleanText.replaceAll(RegExp(r'`([^`]+)`'), r'$1');
-  
-  // Remove links but keep the text
-  cleanText = cleanText.replaceAll(RegExp(r'\[([^\]]+)\]\([^)]+\)'), r'$1');
-  
-  // Remove list markers
-  cleanText = cleanText.replaceAll(RegExp(r'^\s*[-*+]\s*', multiLine: true), '');
-  cleanText = cleanText.replaceAll(RegExp(r'^\s*\d+\.\s*', multiLine: true), '');
-  
-  // Remove blockquotes
-  cleanText = cleanText.replaceAll(RegExp(r'^>\s*', multiLine: true), '');
-  
-  // Remove horizontal rules
-  cleanText = cleanText.replaceAll(RegExp(r'^---+$', multiLine: true), '');
-  
-  // Remove extra whitespace and line breaks
-  cleanText = cleanText.replaceAll(RegExp(r'\n\s*\n'), '\n');
-  cleanText = cleanText.replaceAll(RegExp(r'\s+'), ' ');
-  
-  // Remove emojis if they cause issues with TTS
-  cleanText = cleanText.replaceAll(RegExp(r'[🌱🦠📊🧪🌍💡📈🌾💧🌿🦗🌤️📄🖼️📸]'), '');
-  
-  return cleanText.trim();
-}
-  
 
   Future<void> _initializeSpeech() async {
     bool available = await _speechToText.initialize(
@@ -235,26 +194,44 @@ class _FarmingChatbotState extends State<FarmingChatbot>
     }
   }
 
-Future<void> _speakResponse(String text) async {
-  if (_isSpeaking) {
-    await _flutterTts.stop();
+  Future<void> _speakResponse(String text) async {
+    if (_isSpeaking) {
+      await _flutterTts.stop();
+      setState(() {
+        _isSpeaking = false;
+        _ttsRequested = false;
+      });
+      return;
+    }
+    String cleanText = text
+        .replaceAll(
+            RegExp(r'[#*_`~\[\](){}]'), '') // Remove markdown characters
+        .replaceAll(RegExp(r'[🌱🦠📊🧪🌍📈💡📸🖼️📄]'), '') // Remove emojis
+        .replaceAll(
+            RegExp(r'\s+'), ' ') // Replace multiple spaces with single space
+        .trim();
+
+    if (cleanText.isEmpty) {
+      _showSnackBar('No text to speak');
+      return;
+    }
+
     setState(() {
-      _isSpeaking = false;
-      _ttsRequested = false;
+      _ttsRequested = true;
     });
-    return;
+
+    try {
+      await _flutterTts.setLanguage(_selectedLanguage);
+      await _flutterTts.speak(cleanText);
+    } catch (e) {
+      print('TTS Error: $e');
+      setState(() {
+        _isSpeaking = false;
+        _ttsRequested = false;
+      });
+      _showSnackBar('Text-to-speech error occurred');
+    }
   }
-  
-  setState(() {
-    _ttsRequested = true;
-  });
-  
-  await _flutterTts.setLanguage(_selectedLanguage);
-  
-  // Clean the text before speaking
-  String cleanText = _stripMarkdownForTts(text);
-  await _flutterTts.speak(cleanText);
-}
 
   Future<void> _initializeTts() async {
     await _flutterTts.setLanguage(_selectedLanguage);
@@ -313,6 +290,7 @@ Future<void> _speakResponse(String text) async {
   }
 
 // Process multiple images
+  // Replace your _processMultipleImagesWithGemini method with this fixed version
   Future<void> _processMultipleImagesWithGemini(List<String> imagePaths) async {
     setState(() {
       _messages.add(ChatMessage(
@@ -386,25 +364,62 @@ Focus on practical, science-based advice for optimal crop management based on al
           final geminiResponse =
               data['candidates'][0]['content']['parts'][0]['text'];
 
+          // Create the chat message with the response
+          final chatMessage = ChatMessage(
+            text: geminiResponse,
+            isUser: false,
+            timestamp: DateTime.now(),
+            type: MessageType.text,
+          );
+
           setState(() {
-            _messages.add(ChatMessage(
-              text: geminiResponse,
-              isUser: false,
-              timestamp: DateTime.now(),
-              type: MessageType.text,
-            ));
+            _messages.add(chatMessage);
+          });
+
+          // FIXED: Auto-play TTS for multiple image analysis
+          // Check if TTS should be played (either explicitly requested or user was using voice)
+          if (_ttsRequested || _isListening) {
+            // Use the _speakResponse method directly with the response text
+            await _speakResponse(geminiResponse);
+          }
+        } else {
+          // Handle case where no candidates are returned
+          final errorMessage = ChatMessage(
+            text:
+                'Unable to analyze the images at this time. Please try again.',
+            isUser: false,
+            timestamp: DateTime.now(),
+            type: MessageType.text,
+          );
+          setState(() {
+            _messages.add(errorMessage);
           });
         }
-      }
-    } catch (e) {
-      setState(() {
-        _messages.add(ChatMessage(
+      } else {
+        // Handle HTTP error
+        final errorMessage = ChatMessage(
           text: 'Unable to analyze the images at this time. Please try again.',
           isUser: false,
           timestamp: DateTime.now(),
           type: MessageType.text,
-        ));
+        );
+        setState(() {
+          _messages.add(errorMessage);
+        });
+      }
+    } catch (e) {
+      // Handle general error
+      final errorMessage = ChatMessage(
+        text: 'Unable to analyze the images at this time. Please try again.',
+        isUser: false,
+        timestamp: DateTime.now(),
+        type: MessageType.text,
+      );
+      setState(() {
+        _messages.add(errorMessage);
       });
+      print(
+          'Error in _processMultipleImagesWithGemini: $e'); // Add this for debugging
     } finally {
       setState(() {
         _isProcessing = false;
@@ -436,70 +451,121 @@ Focus on practical, science-based advice for optimal crop management based on al
       String documentContent = '';
       String fileExtension = fileName.toLowerCase().split('.').last;
 
+      print(
+          'Processing file: $fileName with extension: $fileExtension'); // Debug log
+
       switch (fileExtension) {
         case 'txt':
-          documentContent = await File(filePath).readAsString();
+          try {
+            documentContent = await File(filePath).readAsString();
+            print('TXT content length: ${documentContent.length}'); // Debug log
+          } catch (e) {
+            print('Error reading TXT file: $e'); // Debug log
+            documentContent = "Error reading text file: ${e.toString()}";
+          }
           break;
+
         case 'pdf':
           try {
-            // Read PDF using Syncfusion
             final bytes = await File(filePath).readAsBytes();
+            print('PDF file size: ${bytes.length} bytes'); // Debug log
+
             final PdfDocument document = PdfDocument(inputBytes: bytes);
             PdfTextExtractor extractor = PdfTextExtractor(document);
             documentContent = extractor.extractText();
             document.dispose();
+
+            print('PDF content length: ${documentContent.length}'); // Debug log
+
+            if (documentContent.trim().isEmpty) {
+              documentContent =
+                  "The PDF appears to be empty or contains only images/scanned content that cannot be extracted as text.";
+            }
           } catch (e) {
+            print('Error reading PDF file: $e'); // Debug log
             documentContent =
-                "PDF content extraction failed. Please ensure the PDF is not password protected or corrupted.";
+                "PDF content extraction failed: ${e.toString()}. Please ensure the PDF is not password protected or corrupted.";
           }
           break;
+
+        case 'doc':
+        case 'docx':
+          // Note: Full DOC/DOCX support requires additional packages
+          documentContent =
+              "DOC/DOCX files require additional processing. Please convert to PDF or TXT format for best results.";
+          break;
+
         default:
           documentContent =
-              "For best results, please upload PDF or TXT files. Other formats may not be fully supported.";
+              "Unsupported file format: $fileExtension. Please upload PDF or TXT files.";
       }
+
+      print(
+          'Final document content length: ${documentContent.length}'); 
+      if (documentContent.length > 30000) {
+        documentContent = documentContent.substring(0, 30000) +
+            "\n\n[Document truncated due to length...]";
+      }
+
+      // Prepare the request
+      final requestBody = {
+        'contents': [
+          {
+            'parts': [
+              {
+                'text': '''
+You are AgriSense AI, an agricultural expert assistant. A user has uploaded a document titled "$fileName".
+
+Document Content:
+$documentContent
+
+Please analyze this agricultural document and provide detailed insights on:
+
+1. 🧪 **Test Results Interpretation** (if applicable)
+2. 📊 **Data Analysis & Key Insights**
+3. 📈 **Recommendations based on findings**
+4. 🌱 **Agricultural Action Plan**
+5. 💡 **Best Practices Suggestions**
+
+Focus on practical, actionable advice for farmers based on the document content. If the document doesn't contain agricultural information, please explain what type of content it contains and how it might relate to farming practices.
+
+Please format your response using proper markdown with headers and bullet points for clarity.
+'''
+              }
+            ]
+          }
+        ],
+        'generationConfig': {
+          'temperature': 0.3,
+          'topK': 32,
+          'topP': 0.9,
+          'maxOutputTokens': 2048,
+        }
+      };
+
+      print('Sending request to Gemini API...'); // Debug log
 
       final response = await http.post(
         Uri.parse(
-            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'),
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'),
         headers: {
           'Content-Type': 'application/json',
           'X-goog-api-key': _geminiApiKey,
         },
-        body: jsonEncode({
-          'contents': [
-            {
-              'parts': [
-                {
-                  'text': '''
-As AgriSense AI, analyze this agricultural document: "$fileName"
-
-Document Content: $documentContent
-
-Provide detailed analysis on:
-1. 🧪 Test Results Interpretation
-2. 📊 Data Analysis & Insights
-3. 📈 Recommendations based on findings
-4. 🌱 Agricultural Action Plan
-5. 💡 Best Practices Suggestions
-
-Focus on practical, actionable advice for farmers based on the document content.
-'''
-                }
-              ]
-            }
-          ],
-          'generationConfig': {
-            'temperature': 0.3,
-            'topK': 32,
-            'topP': 0.9,
-            'maxOutputTokens': 2048,
-          }
-        }),
+        body: jsonEncode(requestBody),
       );
+
+      print('Response status code: ${response.statusCode}'); // Debug log
+      print('Response body: ${response.body}'); // Debug log
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data['candidates'] != null && data['candidates'].isNotEmpty) {
+
+        if (data['candidates'] != null &&
+            data['candidates'].isNotEmpty &&
+            data['candidates'][0]['content'] != null &&
+            data['candidates'][0]['content']['parts'] != null &&
+            data['candidates'][0]['content']['parts'].isNotEmpty) {
           final geminiResponse =
               data['candidates'][0]['content']['parts'][0]['text'];
 
@@ -511,23 +577,63 @@ Focus on practical, actionable advice for farmers based on the document content.
               type: MessageType.text,
             ));
           });
+
+          // Add TTS functionality
+          if (_ttsRequested || _isListening) {
+            // Use the _speakResponse method directly with the response text
+            await _speakResponse(geminiResponse);
+          }
+
+          print('Successfully processed document'); // Debug log
+        } else {
+          print('Invalid response structure: $data'); // Debug log
+          setState(() {
+            _messages.add(ChatMessage(
+              text:
+                  'The document was uploaded but the AI response was incomplete. Please try uploading the document again.',
+              isUser: false,
+              timestamp: DateTime.now(),
+              type: MessageType.text,
+            ));
+          });
         }
       } else {
-        setState(() {
-          _messages.add(ChatMessage(
-            text:
-                'Unable to analyze the document at this time. Please try again.',
-            isUser: false,
-            timestamp: DateTime.now(),
-            type: MessageType.text,
-          ));
-        });
+        print('HTTP Error: ${response.statusCode}'); // Debug log
+        print('Error body: ${response.body}'); // Debug log
+
+        // Try to parse error response
+        try {
+          final errorData = jsonDecode(response.body);
+          final errorMessage =
+              errorData['error']['message'] ?? 'Unknown API error';
+
+          setState(() {
+            _messages.add(ChatMessage(
+              text:
+                  'Unable to analyze the document due to API error: $errorMessage. Please try again.',
+              isUser: false,
+              timestamp: DateTime.now(),
+              type: MessageType.text,
+            ));
+          });
+        } catch (e) {
+          setState(() {
+            _messages.add(ChatMessage(
+              text:
+                  'Unable to analyze the document at this time. Server returned error ${response.statusCode}. Please try again.',
+              isUser: false,
+              timestamp: DateTime.now(),
+              type: MessageType.text,
+            ));
+          });
+        }
       }
     } catch (e) {
+      print('Exception in _processDocumentWithGemini: $e'); // Debug log
       setState(() {
         _messages.add(ChatMessage(
           text:
-              'Unable to analyze the document at this time. Please try again.',
+              'Unable to analyze the document due to an error: ${e.toString()}. Please try again.',
           isUser: false,
           timestamp: DateTime.now(),
           type: MessageType.text,
@@ -569,8 +675,8 @@ Focus on practical, actionable advice for farmers based on the document content.
   }
 
   Future<void> _processWithGemini(String text) async {
-  try {
-    String enhancedPrompt = '''
+    try {
+      String enhancedPrompt = '''
 You are AgriSense AI, a professional agricultural assistant specializing in modern farming solutions. Provide accurate, practical, and science-based advice for farmers.
 
 Context: You're integrated into a comprehensive farming platform that offers:
@@ -600,71 +706,71 @@ Response Guidelines:
 If location-specific information is requested (like Sathyamangalam), acknowledge the locality and provide relevant regional farming insights.
 ''';
 
-    final response = await http.post(
-      Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'),
-      headers: {
-        'Content-Type': 'application/json',
-        'X-goog-api-key': _geminiApiKey,
-      },
-      body: jsonEncode({
-        'contents': [
-          {
-            'parts': [
-              {'text': enhancedPrompt}
-            ]
+      final response = await http.post(
+        Uri.parse(
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-goog-api-key': _geminiApiKey,
+        },
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': enhancedPrompt}
+              ]
+            }
+          ],
+          'generationConfig': {
+            'temperature': 0.7,
+            'topK': 40,
+            'topP': 0.95,
+            'maxOutputTokens': 1024,
           }
-        ],
-        'generationConfig': {
-          'temperature': 0.7,
-          'topK': 40,
-          'topP': 0.95,
-          'maxOutputTokens': 1024,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['candidates'] != null && data['candidates'].isNotEmpty) {
+          final geminiResponse =
+              data['candidates'][0]['content']['parts'][0]['text'];
+
+          setState(() {
+            _messages.add(ChatMessage(
+              text: geminiResponse,
+              isUser: false,
+              timestamp: DateTime.now(),
+              type: MessageType.text,
+            ));
+          });
+        } else {
+          throw Exception('No response from AI service');
         }
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['candidates'] != null && data['candidates'].isNotEmpty) {
-        final geminiResponse =
-            data['candidates'][0]['content']['parts'][0]['text'];
-
-        setState(() {
-          _messages.add(ChatMessage(
-            text: geminiResponse,
-            isUser: false,
-            timestamp: DateTime.now(),
-            type: MessageType.text,
-          ));
-        });
       } else {
-        throw Exception('No response from AI service');
+        final errorData = jsonDecode(response.body);
+        throw Exception(
+            'API Error: ${errorData['error']['message'] ?? 'Unknown error'}');
       }
-    } else {
-      final errorData = jsonDecode(response.body);
-      throw Exception(
-          'API Error: ${errorData['error']['message'] ?? 'Unknown error'}');
+    } catch (e) {
+      setState(() {
+        _messages.add(ChatMessage(
+          text:
+              'I apologize, but I encountered an issue processing your request. Please try again or check your connection.',
+          isUser: false,
+          timestamp: DateTime.now(),
+          type: MessageType.text,
+        ));
+      });
+      _showSnackBar('Error: ${e.toString()}');
+    } finally {
+      setState(() {
+        _isProcessing = false;
+      });
+      _typingController.stop();
+      _scrollToBottom();
     }
-  } catch (e) {
-    setState(() {
-      _messages.add(ChatMessage(
-        text:
-            'I apologize, but I encountered an issue processing your request. Please try again or check your connection.',
-        isUser: false,
-        timestamp: DateTime.now(),
-        type: MessageType.text,
-      ));
-    });
-    _showSnackBar('Error: ${e.toString()}');
-  } finally {
-    setState(() {
-      _isProcessing = false;
-    });
-    _typingController.stop();
-    _scrollToBottom();
   }
-}
 
   Future _processImageWithGemini(XFile image) async {
     setState(() {
@@ -734,29 +840,57 @@ Focus on practical, science-based advice for optimal crop management.
           final geminiResponse =
               data['candidates'][0]['content']['parts'][0]['text'];
 
+          // Create the chat message with the response
+          final chatMessage = ChatMessage(
+            text: geminiResponse,
+            isUser: false,
+            timestamp: DateTime.now(),
+            type: MessageType.text,
+          );
+
           setState(() {
-            _messages.add(ChatMessage(
-              text: geminiResponse,
-              isUser: false,
-              timestamp: DateTime.now(),
-              type: MessageType.text,
-            ));
+            _messages.add(chatMessage);
           });
+          if (_ttsRequested || _isListening) {
+            await _speakResponse(geminiResponse);
+          }
         } else {
-          throw Exception('No response from AI service');
+          // Handle case where no candidates are returned
+          final errorMessage = ChatMessage(
+            text:
+                'Unable to analyze the image at this time. Please ensure the image is clear and try again.',
+            isUser: false,
+            timestamp: DateTime.now(),
+            type: MessageType.text,
+          );
+          setState(() {
+            _messages.add(errorMessage);
+          });
         }
       } else {
-        throw Exception('Failed to analyze image');
-      }
-    } catch (e) {
-      setState(() {
-        _messages.add(ChatMessage(
+        // Handle HTTP error
+        final errorMessage = ChatMessage(
           text:
               'Unable to analyze the image at this time. Please ensure the image is clear and try again.',
           isUser: false,
           timestamp: DateTime.now(),
           type: MessageType.text,
-        ));
+        );
+        setState(() {
+          _messages.add(errorMessage);
+        });
+      }
+    } catch (e) {
+      // Handle general error
+      final errorMessage = ChatMessage(
+        text:
+            'Unable to analyze the image at this time. Please ensure the image is clear and try again.',
+        isUser: false,
+        timestamp: DateTime.now(),
+        type: MessageType.text,
+      );
+      setState(() {
+        _messages.add(errorMessage);
       });
       _showSnackBar('Image analysis error: ${e.toString()}');
     } finally {
@@ -1280,278 +1414,278 @@ Focus on practical, science-based advice for optimal crop management.
     );
   }
 
- Widget _buildModernMessageBubble(ChatMessage message) {
-  return Container(
-    margin: const EdgeInsets.only(bottom: 16, top: 8),
-    child: Row(
-      mainAxisAlignment:
-          message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!message.isUser) ...[
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+  Widget _buildModernMessageBubble(ChatMessage message) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16, top: 8),
+      child: Row(
+        mainAxisAlignment:
+            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!message.isUser) ...[
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+                ),
+                borderRadius: BorderRadius.circular(16),
               ),
-              borderRadius: BorderRadius.circular(16),
+              child: const Icon(Icons.smart_toy, color: Colors.white, size: 20),
             ),
-            child: const Icon(Icons.smart_toy, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 12),
-        ],
-        Flexible(
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.75,
-            ),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: message.isUser
-                  ? const Color(0xFF4CAF50)
-                  : Colors.grey.shade100,
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(20),
-                topRight: const Radius.circular(20),
-                bottomLeft: message.isUser
-                    ? const Radius.circular(20)
-                    : const Radius.circular(4),
-                bottomRight: message.isUser
-                    ? const Radius.circular(4)
-                    : const Radius.circular(20),
+            const SizedBox(width: 12),
+          ],
+          Flexible(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Display images if present
-                if (message.imageUrls != null && message.imageUrls!.isNotEmpty)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: message.imageUrls!.map((imageUrl) {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            File(imageUrl),
-                            width: 120,
-                            height: 120,
-                            fit: BoxFit.cover,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-
-                // Display document info if present
-                if (message.documentName != null)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.shade200),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.description, 
-                            color: Colors.blue, size: 16),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            message.documentName!,
-                            style: const TextStyle(
-                              color: Colors.blue,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: message.isUser
+                    ? const Color(0xFF4CAF50)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: message.isUser
+                      ? const Radius.circular(20)
+                      : const Radius.circular(4),
+                  bottomRight: message.isUser
+                      ? const Radius.circular(4)
+                      : const Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Display images if present
+                  if (message.imageUrls != null &&
+                      message.imageUrls!.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: message.imageUrls!.map((imageUrl) {
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(
+                              File(imageUrl),
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
                             ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // Message text with markdown support
-                message.isUser 
-                  ? Text(
-                      message.text,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        height: 1.4,
+                          );
+                        }).toList(),
                       ),
-                    )
-                  : MarkdownBody(
-                      data: message.text,
-                      styleSheet: MarkdownStyleSheet(
-                        // Body text styling
-                        p: const TextStyle(
-                          color: Colors.black87,
-                          fontSize: 16,
-                          height: 1.4,
-                        ),
-                        // Header styles with green color
-                        h1: const TextStyle(
-                          color: Color(0xFF4CAF50),
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
-                        ),
-                        h2: const TextStyle(
-                          color: Color(0xFF4CAF50),
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
-                        ),
-                        h3: const TextStyle(
-                          color: Color(0xFF4CAF50),
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
-                        ),
-                        h4: const TextStyle(
-                          color: Color(0xFF4CAF50),
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
-                        ),
-                        h5: const TextStyle(
-                          color: Color(0xFF4CAF50),
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
-                        ),
-                        h6: const TextStyle(
-                          color: Color(0xFF4CAF50),
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
-                        ),
-                        // Strong/bold text styling
-                        strong: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        // Emphasis/italic text styling
-                        em: const TextStyle(
-                          color: Colors.black87,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        // Code styling
-                        code: TextStyle(
-                          backgroundColor: Colors.grey.shade200,
-                          color: Colors.black87,
-                          fontSize: 14,
-                          fontFamily: 'monospace',
-                        ),
-                        // Code block styling
-                        codeblockDecoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        // List styling
-                        listBullet: const TextStyle(
-                          color: Color(0xFF4CAF50),
-                          fontSize: 16,
-                        ),
-                        // Link styling
-                        a: const TextStyle(
-                          color: Color(0xFF4CAF50),
-                          decoration: TextDecoration.underline,
-                        ),
-                        // Blockquote styling
-                        blockquote: const TextStyle(
-                          color: Colors.black54,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        blockquoteDecoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                         
-                        ),
-                        // Table styling
-                        tableHead: const TextStyle(
-                          color: Color(0xFF4CAF50),
-                          fontWeight: FontWeight.bold,
-                        ),
-                        tableBody: const TextStyle(
-                          color: Colors.black87,
-                        ),
-                        tableBorder: TableBorder.all(
-                          color: Colors.grey.shade300,
-                          width: 1,
-                        ),
-                        // Horizontal rule
-                        horizontalRuleDecoration: BoxDecoration(
-                          border: Border(
-                            top: BorderSide(
+                    ),
+
+                  // Display document info if present
+                  if (message.documentName != null)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.description,
+                              color: Colors.blue, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              message.documentName!,
+                              style: const TextStyle(
+                                color: Colors.blue,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // Message text with markdown support
+                  message.isUser
+                      ? Text(
+                          message.text,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            height: 1.4,
+                          ),
+                        )
+                      : MarkdownBody(
+                          data: message.text,
+                          styleSheet: MarkdownStyleSheet(
+                            // Body text styling
+                            p: const TextStyle(
+                              color: Colors.black87,
+                              fontSize: 16,
+                              height: 1.4,
+                            ),
+                            // Header styles with green color
+                            h1: const TextStyle(
+                              color: Color(0xFF4CAF50),
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              height: 1.3,
+                            ),
+                            h2: const TextStyle(
+                              color: Color(0xFF4CAF50),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              height: 1.3,
+                            ),
+                            h3: const TextStyle(
+                              color: Color(0xFF4CAF50),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              height: 1.3,
+                            ),
+                            h4: const TextStyle(
+                              color: Color(0xFF4CAF50),
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              height: 1.3,
+                            ),
+                            h5: const TextStyle(
+                              color: Color(0xFF4CAF50),
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              height: 1.3,
+                            ),
+                            h6: const TextStyle(
+                              color: Color(0xFF4CAF50),
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              height: 1.3,
+                            ),
+                            // Strong/bold text styling
+                            strong: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            // Emphasis/italic text styling
+                            em: const TextStyle(
+                              color: Colors.black87,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            // Code styling
+                            code: TextStyle(
+                              backgroundColor: Colors.grey.shade200,
+                              color: Colors.black87,
+                              fontSize: 14,
+                              fontFamily: 'monospace',
+                            ),
+                            // Code block styling
+                            codeblockDecoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            // List styling
+                            listBullet: const TextStyle(
+                              color: Color(0xFF4CAF50),
+                              fontSize: 16,
+                            ),
+                            // Link styling
+                            a: const TextStyle(
+                              color: Color(0xFF4CAF50),
+                              decoration: TextDecoration.underline,
+                            ),
+                            // Blockquote styling
+                            blockquote: const TextStyle(
+                              color: Colors.black54,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            blockquoteDecoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                            ),
+                            // Table styling
+                            tableHead: const TextStyle(
+                              color: Color(0xFF4CAF50),
+                              fontWeight: FontWeight.bold,
+                            ),
+                            tableBody: const TextStyle(
+                              color: Colors.black87,
+                            ),
+                            tableBorder: TableBorder.all(
                               color: Colors.grey.shade300,
                               width: 1,
                             ),
+                            // Horizontal rule
+                            horizontalRuleDecoration: BoxDecoration(
+                              border: Border(
+                                top: BorderSide(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Enable selectable text
+                          selectable: true,
+                          // Handle link taps
+                          onTapLink: (text, href, title) {
+                            // Handle link taps if needed
+                            print('Link tapped: $href');
+                          },
+                        ),
+
+                  const SizedBox(height: 8),
+
+                  // Timestamp and actions
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _formatTime(message.timestamp),
+                        style: TextStyle(
+                          color: message.isUser ? Colors.white70 : Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (!message.isUser)
+                        IconButton(
+                          onPressed: () => _speakResponse(message.text),
+                          icon: Icon(
+                            (_isSpeaking && _ttsRequested)
+                                ? Icons.volume_off
+                                : Icons.volume_up,
+                            size: 18,
+                            color: Color(0xFF4CAF50),
                           ),
                         ),
-                      ),
-                      // Enable selectable text
-                      selectable: true,
-                      // Handle link taps
-                      onTapLink: (text, href, title) {
-                        // Handle link taps if needed
-                        print('Link tapped: $href');
-                      },
-                    ),
-
-                const SizedBox(height: 8),
-
-                // Timestamp and actions
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      _formatTime(message.timestamp),
-                      style: TextStyle(
-                        color: message.isUser ? Colors.white70 : Colors.grey,
-                        fontSize: 12,
-                      ),
-                    ),
-                    if (!message.isUser)
-                      IconButton(
-                        onPressed: () => _speakResponse(message.text),
-                        icon: Icon(
-                          (_isSpeaking && _ttsRequested)
-                              ? Icons.volume_off
-                              : Icons.volume_up,
-                          size: 18,
-                          color: Color(0xFF4CAF50),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        if (message.isUser) ...[
-          const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Color(0xFF4CAF50).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
+          if (message.isUser) ...[
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Color(0xFF4CAF50).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child:
+                  const Icon(Icons.person, color: Color(0xFF4CAF50), size: 20),
             ),
-            child:
-                const Icon(Icons.person, color: Color(0xFF4CAF50), size: 20),
-          ),
+          ],
         ],
-      ],
-    ),
-  );
-}
+      ),
+    );
+  }
 
   String _formatTime(DateTime timestamp) {
     final now = DateTime.now();

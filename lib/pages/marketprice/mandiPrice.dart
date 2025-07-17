@@ -62,7 +62,7 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
 
         for (var record in data['records']) {
           final mandiPrice = MandiPrice.fromJson(record);
-          if (mandiPrice.state == 'Tamil Nadu') { 
+          if (mandiPrice.state == 'Kerala') { 
             prices.add(mandiPrice);
           }
         }
