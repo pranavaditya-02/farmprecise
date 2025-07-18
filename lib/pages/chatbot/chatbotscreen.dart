@@ -430,7 +430,9 @@ Focus on practical, science-based advice for optimal crop management based on al
   }
 
 // Process document
-  Future<void> _processDocumentWithGemini(
+
+// part-2
+Future<void> _processDocumentWithGemini(
       String filePath, String fileName) async {
     setState(() {
       _messages.add(ChatMessage(
@@ -501,7 +503,9 @@ Focus on practical, science-based advice for optimal crop management based on al
       }
 
       print(
-          'Final document content length: ${documentContent.length}'); 
+          'Final document content length: ${documentContent.length}'); // Debug log
+
+      // Check if document content is too long (Gemini has token limits)
       if (documentContent.length > 30000) {
         documentContent = documentContent.substring(0, 30000) +
             "\n\n[Document truncated due to length...]";
@@ -547,7 +551,7 @@ Please format your response using proper markdown with headers and bullet points
 
       final response = await http.post(
         Uri.parse(
-            'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'),
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'),
         headers: {
           'Content-Type': 'application/json',
           'X-goog-api-key': _geminiApiKey,
@@ -578,7 +582,7 @@ Please format your response using proper markdown with headers and bullet points
             ));
           });
 
-          // Add TTS functionality
+          // Add TTS functionality - THIS IS THE CRITICAL PART THAT WAS MISSING
           if (_ttsRequested || _isListening) {
             // Use the _speakResponse method directly with the response text
             await _speakResponse(geminiResponse);
@@ -851,7 +855,11 @@ Focus on practical, science-based advice for optimal crop management.
           setState(() {
             _messages.add(chatMessage);
           });
+
+          // ADDED: Auto-play TTS for single image analysis
+          // Check if TTS should be played (either explicitly requested or user was using voice)
           if (_ttsRequested || _isListening) {
+            // Use the _speakResponse method directly with the response text
             await _speakResponse(geminiResponse);
           }
         } else {
