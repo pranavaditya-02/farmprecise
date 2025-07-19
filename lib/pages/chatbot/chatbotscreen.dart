@@ -290,7 +290,7 @@ class _FarmingChatbotState extends State<FarmingChatbot>
   }
 
 // Process multiple images
-  // Replace your _processMultipleImagesWithGemini method with this fixed version
+
   Future<void> _processMultipleImagesWithGemini(List<String> imagePaths) async {
     setState(() {
       _messages.add(ChatMessage(
@@ -729,7 +729,7 @@ If location-specific information is requested (like Sathyamangalam), acknowledge
             'temperature': 0.7,
             'topK': 40,
             'topP': 0.95,
-            'maxOutputTokens': 1024,
+            'maxOutputTokens': 2048,
           }
         }),
       );
@@ -748,6 +748,10 @@ If location-specific information is requested (like Sathyamangalam), acknowledge
               type: MessageType.text,
             ));
           });
+          if (_ttsRequested || _isListening) {
+            // Use the _speakResponse method directly with the response text
+            await _speakResponse(geminiResponse);
+          }
         } else {
           throw Exception('No response from AI service');
         }

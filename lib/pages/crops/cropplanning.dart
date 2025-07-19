@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class CropPlanningScreen extends StatefulWidget {
   @override
   _CropPlanningScreenState createState() => _CropPlanningScreenState();
 }
+
+
 
 class _CropPlanningScreenState extends State<CropPlanningScreen>
     with SingleTickerProviderStateMixin {
@@ -17,6 +21,10 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
   final _scrollController = ScrollController();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+
+  late FlutterTts flutterTts;
+bool isSpeaking = false;
+bool isTtsEnabled = false;
   
   String _selectedCrop = 'Rice';
   String _soilType = 'Loamy';
@@ -47,12 +55,45 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+    
+    // Initialize TTS
+    _initTts();
+  }
+
+  Future<void> _initTts() async {
+    try {
+      flutterTts = FlutterTts();
+      await flutterTts?.setLanguage("en-US");
+      await flutterTts?.setSpeechRate(0.5);
+      await flutterTts?.setVolume(1.0);
+      await flutterTts?.setPitch(1.0);
+      
+      flutterTts?.setCompletionHandler(() {
+        if (mounted) {
+          setState(() {
+            isSpeaking = false;
+          });
+        }
+      });
+      
+      flutterTts?.setErrorHandler((msg) {
+        print("TTS Error: $msg");
+        if (mounted) {
+          setState(() {
+            isSpeaking = false;
+          });
+        }
+      });
+    } catch (e) {
+      print("TTS initialization error: $e");
+    }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     _scrollController.dispose();
+    flutterTts?.stop();
     super.dispose();
   }
 
@@ -71,20 +112,27 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
     });
 
     try {
-      final response = await _callGeminiAPI(
-        "Generate a comprehensive crop planning schedule for $_selectedCrop in ${_locationController.text}. "
-        "Farm details: Size: ${_farmSizeController.text} acres, Soil type: $_soilType, Season: $_season. "
-        "Please provide detailed information including:\n"
-        "1. Optimal planting dates and timeline\n"
-        "2. Soil preparation requirements\n"
-        "3. Fertilizer schedule with specific quantities\n"
-        "4. Irrigation plan and water requirements\n"
-        "5. Pest management strategies\n"
-        "6. Expected harvest timing and yield\n"
-        "7. Market considerations and pricing\n"
-        "Additional notes: ${_additionalNotesController.text}. "
-        "Format the response in a clear, structured manner suitable for farmers."
-      );
+      // Replace the existing prompt in _generateCropPlan method with:
+final response = await _callGeminiAPI(
+  "Generate a comprehensive crop planning schedule for $_selectedCrop in ${_locationController.text}. "
+  "Farm details: Size: ${_farmSizeController.text} acres, Soil type: $_soilType, Season: $_season. "
+  "Please provide detailed information including:\n"
+  "1. **Optimal Planting Dates and Timeline**\n"
+  "2. **Soil Preparation Requirements**\n"
+  "3. **Fertilizer Schedule with Specific Quantities**\n"
+  "4. **Irrigation Plan and Water Requirements**\n"
+  "5. **Pest Management Strategies**\n"
+  "6. **Expected Harvest Timing and Yield**\n"
+  "7. **Market Considerations and Pricing**\n"
+  "Additional notes: ${_additionalNotesController.text}. "
+  "Format your response using proper markdown: "
+  "- Use ## for main headings "
+  "- Use ### for subheadings "
+  "- Use **bold** for emphasis "
+  "- Use * for bullet points "
+  "- Use numbered lists where appropriate "
+  "- Use tables for data presentation where suitable"
+);
 
       setState(() {
         _result = response;
@@ -126,111 +174,276 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
   }
 
   Widget _buildFormattedResult(String content) {
-    // Parse and format the content for better readability
-    final sections = _parseContent(content);
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header with plan summary
-        Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF2E7D32), Color(0xFF4CAF50)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: Offset(0, 4),
-              ),
-            ],
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Header with plan summary and TTS controls
+      Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF2E7D32), Color(0xFF4CAF50)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.agriculture,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
-                child: Icon(
-                  Icons.agriculture,
-                  color: Colors.white,
-                  size: 28,
-                ),
-              ),
-              SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Crop Planning Report',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Crop Planning Report',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      '$_selectedCrop • ${_farmSizeController.text} acres • $_season season',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.9),
+                      SizedBox(height: 4),
+                      Text(
+                        '$_selectedCrop • ${_farmSizeController.text} acres • $_season season',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.auto_awesome, color: Colors.white, size: 16),
-                    SizedBox(width: 4),
-                    Text(
-                      'AI Generated',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.auto_awesome, color: Colors.white, size: 16),
+                      SizedBox(width: 4),
+                      Text(
+                        'AI Generated',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+            SizedBox(height: 16),
+            // TTS Controls
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  onPressed: () => _toggleTts(),
+                  icon: Icon(
+                    isSpeaking ? Icons.volume_off : Icons.volume_up,
+                    color: Colors.white,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    padding: EdgeInsets.all(12),
+                  ),
+                ),
+                SizedBox(width: 8),
+                Text(
+                  isSpeaking ? 'Tap to stop' : 'Tap to listen',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      
+      SizedBox(height: 20),
+      
+      // Quick stats cards
+      _buildQuickStatsRow(),
+      
+      SizedBox(height: 24),
+      
+      // Markdown content
+      Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: MarkdownBody(
+          data: _formatContentAsMarkdown(content),
+          styleSheet: MarkdownStyleSheet(
+            h1: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2E7D32),
+            ),
+            h2: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF4CAF50),
+            ),
+            h3: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF2E7D32),
+            ),
+            p: TextStyle(
+              fontSize: 15,
+              color: Color(0xFF424242),
+              height: 1.6,
+            ),
+            strong: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2E7D32),
+            ),
+            listBullet: TextStyle(
+              color: Color(0xFF4CAF50),
+              fontSize: 16,
+            ),
+            tableHead: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2E7D32),
+            ),
+            tableBody: TextStyle(
+              color: Color(0xFF424242),
+            ),
           ),
         ),
+      ),
+      
+      SizedBox(height: 24),
+      
+      // Action buttons
+      _buildActionButtons(),
+    ],
+  );
+}
+
+// Add these methods after the _buildActionButtons method
+ String _formatContentAsMarkdown(String content) {
+    // Clean up the content first
+    String formatted = content
+        .replaceAll(RegExp(r'#{3,}\s*\$\d+'), '') // Remove ### $1 patterns
+        .replaceAll(RegExp(r'\*{2,}\s*#{3,}\s*\$\d+\s*\*{2,}'), '') // Remove **### $1 ** patterns
+        .replaceAll(RegExp(r'#{3,}\s*'), '### ') // Clean up ### patterns
+        .replaceAll(RegExp(r'\*{2,}'), '**') // Clean up multiple asterisks
         
-        SizedBox(height: 20),
-        
-        // Quick stats cards
-        _buildQuickStatsRow(),
-        
-        SizedBox(height: 24),
-        
-        // Main content sections
-        ...sections.map((section) => _buildContentSection(section)).toList(),
-        
-        SizedBox(height: 24),
-        
-        // Action buttons
-        _buildActionButtons(),
-      ],
-    );
+        .replaceAll(RegExp(r'•\s*'), '* ') // Convert bullets
+        .replaceAll(RegExp(r'-\s*'), '* ') // Convert dashes to bullets
+        .replaceAll(RegExp(r'\n\s*\n\s*\n+'), '\n\n') // Clean up excessive newlines
+        .trim();
+    
+    return formatted;
   }
+
+void _toggleTts() async {
+    if (flutterTts == null) {
+      await _initTts();
+      if (flutterTts == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Text-to-speech is not available on this device'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
+    try {
+      if (isSpeaking) {
+        await flutterTts?.stop();
+        setState(() {
+          isSpeaking = false;
+        });
+      } else {
+        String cleanText = _cleanTextForTts(_result);
+        if (cleanText.isNotEmpty) {
+          setState(() {
+            isSpeaking = true;
+          });
+          await flutterTts?.speak(cleanText);
+        }
+      }
+    } catch (e) {
+      print("TTS error: $e");
+      setState(() {
+        isSpeaking = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error with text-to-speech: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+ String _cleanTextForTts(String text) {
+    String cleanText = text
+        // Remove all markdown formatting
+        .replaceAll(RegExp(r'#{1,6}\s*'), '') // Remove headers
+        .replaceAll(RegExp(r'\*{1,2}([^*]+)\*{1,2}'), r'$1') // Remove bold/italic
+        .replaceAll(RegExp(r'`([^`]+)`'), r'$1') // Remove code blocks
+        .replaceAll(RegExp(r'[_~\[\](){}]'), '') // Remove other markdown chars
+        .replaceAll(RegExp(r'[🌱🦠📊🧪🌍📈💡📸🖼️📄]'), '') // Remove emojis
+        .replaceAll(RegExp(r'#{3,}\s*\$\d+'), '') // Remove ### $1 patterns
+        .replaceAll(RegExp(r'\*{2,}\s*#{3,}\s*\$\d+\s*\*{2,}'), '') // Remove **### $1 ** patterns
+        .replaceAll(RegExp(r'[•\-]\s*'), 'Point: ') // Convert bullets to "Point:"
+        .replaceAll(RegExp(r'\n\s*\n'), '. ') // Convert paragraph breaks to periods
+        .replaceAll(RegExp(r'\s+'), ' ') // Replace multiple spaces with single space
+        .replaceAll(RegExp(r'[^\w\s.,!?;:]'), '') // Keep only alphanumeric, spaces, and basic punctuation
+        .trim();
+    
+    // Limit text length for TTS (optional - to prevent very long speeches)
+    if (cleanText.length > 1000) {
+      cleanText = cleanText.substring(0, 1000) + "... Content truncated for speech.";
+    }
+    
+    return cleanText;
+  }
+
 
   Widget _buildQuickStatsRow() {
     return Row(
@@ -514,50 +727,56 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
     });
   }
 
-  Future<String> _callGeminiAPI(String prompt) async {
+   Future<String> _callGeminiAPI(String prompt) async {
     final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent');
     
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-goog-api-key': _apiKey,
-      },
-      body: jsonEncode({
-        'contents': [
-          {
-            'parts': [
-              {
-                'text': prompt
-              }
-            ]
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-goog-api-key': _apiKey,
+        },
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {
+                  'text': prompt
+                }
+              ]
+            }
+          ],
+          'generationConfig': {
+            'temperature': 0.7,
+            'maxOutputTokens': 2048,
+            'topP': 0.9,
+            'topK': 40
           }
-        ],
-        'generationConfig': {
-          'temperature': 0.7,
-          'maxOutputTokens': 2000,
-          'topP': 0.9,
-          'topK': 40
-        }
-      }),
-    );
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      
-      try {
-        return data['candidates'][0]['content']['parts'][0]['text'];
-      } catch (e) {
-        return 'Error parsing response: $e';
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        try {
+          String content = data['candidates'][0]['content']['parts'][0]['text'];
+          // Clean the content before returning
+          return content.replaceAll(RegExp(r'#{3,}\s*\$\d+'), '').trim();
+        } catch (e) {
+          return 'Error parsing response: $e';
+        }
+      } else {
+        try {
+          final errorData = jsonDecode(response.body);
+          final errorMessage = errorData['error']?['message'] ?? 'Unknown error';
+          return 'API Error (${response.statusCode}): $errorMessage';
+        } catch (e) {
+          return 'HTTP Error (${response.statusCode}): ${response.body}';
+        }
       }
-    } else {
-      try {
-        final errorData = jsonDecode(response.body);
-        final errorMessage = errorData['error']?['message'] ?? 'Unknown error';
-        return 'API Error (${response.statusCode}): $errorMessage';
-      } catch (e) {
-        return 'HTTP Error (${response.statusCode}): ${response.body}';
-      }
+    } catch (e) {
+      return 'Network Error: Please check your internet connection. $e';
     }
   }
 
@@ -615,6 +834,7 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
       ),
     );
   }
+  
 
   Widget _buildHeroSection() {
     return Container(
@@ -636,16 +856,10 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.agriculture,
-            size: 48,
-            color: Colors.white,
-          ),
-          SizedBox(height: 16),
           Text(
             'AI-Powered Crop Planning',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -655,7 +869,7 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
           Text(
             'Get personalized farming recommendations based on your location, soil type, and season',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               color: Colors.white.withOpacity(0.9),
             ),
             textAlign: TextAlign.center,

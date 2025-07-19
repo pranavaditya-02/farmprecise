@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:farmprecise/home1.dart';
+import 'package:farmprecise/pages/chatbot/chatbotscreen.dart';
 import 'package:farmprecise/pages/dashboard/farmercommunity.dart';
 import 'package:farmprecise/pages/crops/cropcalendar.dart';
 import 'package:farmprecise/pages/cropscanner/cropscannner.dart';
@@ -12,6 +14,7 @@ import 'package:farmprecise/components/custom_appbar.dart';
 import 'package:farmprecise/components/custom_drawer.dart';
 import 'package:farmprecise/components/bottom_navigation.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:lottie/lottie.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -42,10 +45,19 @@ class _HomePageState extends State<HomePage> {
     RentProductsForm(),
     DroneMonitoringScreen(),
   ];
+  
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index; // Update the selected index
     });
+  }
+
+  // Method to navigate to chatbot screen
+  void _openChatbot() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => FarmingChatbot()),
+    );
   }
 
   Timer? _timer; // Timer instance
@@ -320,6 +332,58 @@ class _HomePageState extends State<HomePage> {
         selectedIndex: _selectedIndex,
         onItemTapped: _onItemTapped, // Handle bottom nav item taps
       ),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+  onPressed: _openChatbot,
+  backgroundColor: Colors.transparent,
+  elevation: 0,
+  child: Container(
+    width: 68,
+    height: 68,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: LinearGradient(
+        colors: [
+          Colors.green.shade600,
+          Colors.green.shade700,
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: const Color.fromARGB(255, 2, 51, 4).withOpacity(0.4),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+        BoxShadow(
+          color: Colors.black.withOpacity(0.2),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Lottie.asset(
+      'assets/ChatBotAnimatedIcon.json',
+      width: 40,
+      height: 40,
+      fit: BoxFit.contain,
+      repeat: true,
+      animate: true,
+    ),
+  ),
+),
+      ),
     );
   }
 
@@ -555,3 +619,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
