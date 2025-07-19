@@ -333,6 +333,7 @@ As AgriSense AI, analyze these ${imagePaths.length} agricultural images comprehe
 7. 💡 Comprehensive Recommendations
 
 Focus on practical, science-based advice for optimal crop management based on all provided images.
+Keep response under 500 words.
 '''
         },
         ...imageParts
@@ -353,7 +354,7 @@ Focus on practical, science-based advice for optimal crop management based on al
             'temperature': 0.3,
             'topK': 32,
             'topP': 0.9,
-            'maxOutputTokens': 2048,
+            'maxOutputTokens': 1024,
           }
         }),
       );
@@ -534,6 +535,7 @@ Please analyze this agricultural document and provide detailed insights on:
 Focus on practical, actionable advice for farmers based on the document content. If the document doesn't contain agricultural information, please explain what type of content it contains and how it might relate to farming practices.
 
 Please format your response using proper markdown with headers and bullet points for clarity.
+Keep response under 500 words.
 '''
               }
             ]
@@ -543,7 +545,7 @@ Please format your response using proper markdown with headers and bullet points
           'temperature': 0.3,
           'topK': 32,
           'topP': 0.9,
-          'maxOutputTokens': 2048,
+          'maxOutputTokens': 1024,
         }
       };
 
@@ -679,8 +681,8 @@ Please format your response using proper markdown with headers and bullet points
   }
 
   Future<void> _processWithGemini(String text) async {
-    try {
-      String enhancedPrompt = '''
+  try {
+    final String enhancedPrompt = '''
 You are AgriSense AI, a professional agricultural assistant specializing in modern farming solutions. Provide accurate, practical, and science-based advice for farmers.
 
 Context: You're integrated into a comprehensive farming platform that offers:
@@ -696,7 +698,7 @@ Response Guidelines:
 1. Provide clear, actionable advice
 2. Use professional agricultural terminology
 3. Include specific recommendations when applicable
-4. For market price queries, acknowledge the request and suggest checking local agricultural market boards or real-time market data
+4. For market price queries, provide current market trends and prices
 5. Focus on sustainable and efficient farming practices
 6. Respond in the same language as the query
 7. Keep responses concise but comprehensive
@@ -708,77 +710,125 @@ Response Guidelines:
    - Use numbered lists where appropriate
 
 If location-specific information is requested (like Sathyamangalam), acknowledge the locality and provide relevant regional farming insights.
+Keep response under 500 words.
 ''';
 
-      final response = await http.post(
-        Uri.parse(
-            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'),
-        headers: {
-          'Content-Type': 'application/json',
-          'X-goog-api-key': _geminiApiKey,
-        },
-        body: jsonEncode({
-          'contents': [
-            {
-              'parts': [
-                {'text': enhancedPrompt}
-              ]
-            }
-          ],
-          'generationConfig': {
-            'temperature': 0.7,
-            'topK': 40,
-            'topP': 0.95,
-            'maxOutputTokens': 2048,
+    final http.Response response = await http.post(
+      Uri.parse(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'X-goog-api-key': _geminiApiKey,
+      },
+      body: jsonEncode(<String, dynamic>{
+        'contents': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'parts': <Map<String, String>>[
+              <String, String>{'text': enhancedPrompt}
+            ]
           }
-        }),
-      );
+        ],
+        'generationConfig': <String, dynamic>{
+          'temperature': 0.7,
+          'topK': 40,
+          'topP': 0.95,
+          'maxOutputTokens': 2048,
+        }
+      }),
+    );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['candidates'] != null && data['candidates'].isNotEmpty) {
-          final geminiResponse =
-              data['candidates'][0]['content']['parts'][0]['text'];
+    if (response.statusCode == 200) {
+      final Map<String, dynamic>? data = jsonDecode(response.body) as Map<String, dynamic>?;
+      
+      // Add comprehensive null checks
+      if (data != null && 
+          data.containsKey('candidates') &&
+          data['candidates'] is List &&
+          (data['candidates'] as List).isNotEmpty) {
+        
+        final List<dynamic> candidates = data['candidates'] as List<dynamic>;
+        final Map<String, dynamic>? firstCandidate = candidates[0] as Map<String, dynamic>?;
+        
+        if (firstCandidate != null &&
+            firstCandidate.containsKey('content') &&
+            firstCandidate['content'] is Map<String, dynamic>) {
+          
+          final Map<String, dynamic> content = firstCandidate['content'] as Map<String, dynamic>;
+          
+          if (content.containsKey('parts') &&
+              content['parts'] is List &&
+              (content['parts'] as List).isNotEmpty) {
+            
+            final List<dynamic> parts = content['parts'] as List<dynamic>;
+            final Map<String, dynamic>? firstPart = parts[0] as Map<String, dynamic>?;
+            
+            if (firstPart != null &&
+                firstPart.containsKey('text') &&
+                firstPart['text'] is String) {
+              
+              final String geminiResponse = firstPart['text'] as String;
 
-          setState(() {
-            _messages.add(ChatMessage(
-              text: geminiResponse,
-              isUser: false,
-              timestamp: DateTime.now(),
-              type: MessageType.text,
-            ));
-          });
-          if (_ttsRequested || _isListening) {
-            // Use the _speakResponse method directly with the response text
-            await _speakResponse(geminiResponse);
+              setState(() {
+                _messages.add(ChatMessage(
+                  text: geminiResponse,
+                  isUser: false,
+                  timestamp: DateTime.now(),
+                  type: MessageType.text,
+                ));
+              });
+              
+              if (_ttsRequested || _isListening) {
+                await _speakResponse(geminiResponse);
+              }
+            } else {
+              throw Exception('Invalid text content in API response');
+            }
+          } else {
+            throw Exception('Invalid parts structure in API response');
           }
         } else {
-          throw Exception('No response from AI service');
+          throw Exception('Invalid content structure in API response');
         }
       } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(
-            'API Error: ${errorData['error']['message'] ?? 'Unknown error'}');
+        // Log the actual response for debugging
+        print('Unexpected API response structure: ${response.body}');
+        throw Exception('Invalid response structure from AI service');
       }
-    } catch (e) {
-      setState(() {
-        _messages.add(ChatMessage(
-          text:
-              'I apologize, but I encountered an issue processing your request. Please try again or check your connection.',
-          isUser: false,
-          timestamp: DateTime.now(),
-          type: MessageType.text,
-        ));
-      });
-      _showSnackBar('Error: ${e.toString()}');
-    } finally {
-      setState(() {
-        _isProcessing = false;
-      });
-      _typingController.stop();
-      _scrollToBottom();
+    } else {
+      // Better error handling for non-200 status codes
+      print('API Error - Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+      
+      try {
+        final Map<String, dynamic> errorData = jsonDecode(response.body) as Map<String, dynamic>;
+        final String errorMessage = (errorData['error'] as Map<String, dynamic>?)?['message'] as String? ?? 'Unknown API error';
+        throw Exception('API Error (${response.statusCode}): $errorMessage');
+      } catch (e) {
+        throw Exception('API Error (${response.statusCode}): Unable to parse error response');
+      }
     }
+  } catch (e) {
+    // Enhanced error logging
+    print('Error in _processWithGemini: $e');
+    
+    setState(() {
+      _messages.add(ChatMessage(
+        text: 'I apologize, but I encountered an issue processing your request. Please try again or check your connection.',
+        isUser: false,
+        timestamp: DateTime.now(),
+        type: MessageType.text,
+      ));
+    });
+    
+    _showSnackBar('Error: ${e.toString()}');
+  } finally {
+    setState(() {
+      _isProcessing = false;
+    });
+    _typingController.stop();
+    _scrollToBottom();
   }
+}
 
   Future _processImageWithGemini(XFile image) async {
     setState(() {
@@ -822,6 +872,7 @@ As AgriSense AI, analyze this agricultural image with professional expertise. Pr
 6. 💡 Actionable Recommendations
 
 Focus on practical, science-based advice for optimal crop management.
+Keep response under 500 words.
 '''
                 },
                 {
@@ -837,7 +888,7 @@ Focus on practical, science-based advice for optimal crop management.
             'temperature': 0.3,
             'topK': 32,
             'topP': 0.9,
-            'maxOutputTokens': 2048,
+            'maxOutputTokens': 1024,
           }
         }),
       );
