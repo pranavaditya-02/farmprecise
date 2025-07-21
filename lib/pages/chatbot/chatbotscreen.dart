@@ -696,9 +696,17 @@ User Query: $text
 
 Response Guidelines:
 1. Provide clear, actionable advice
-2. Use professional agricultural terminology
+2. Use professional agricultural terminology that should be easily understood by farmers
 3. Include specific recommendations when applicable
-4. For market price queries, provide current market trends and prices
+4. For MARKET PRICE queries specifically:
+   - Always provide current date context (As of [current date])
+   - Include both wholesale and retail prices when available
+   - Mention specific market locations (Uzhavar Sandhai, wholesale markets)
+   - Provide grade-wise pricing (Grade A, Grade B, Grade C)
+   - Include price ranges for different varieties
+   - Add factors affecting current prices
+   - Mention daily price fluctuation disclaimer
+   - Format prices clearly with ₹ symbol and per Kg/Quintal units
 5. Focus on sustainable and efficient farming practices
 6. Respond in the same language as the query
 7. Keep responses concise but comprehensive
@@ -1535,8 +1543,8 @@ Keep response under 500 words.
                             borderRadius: BorderRadius.circular(8),
                             child: Image.file(
                               File(imageUrl),
-                              width: 120,
-                              height: 120,
+                              width: 50,
+                              height: 50,
                               fit: BoxFit.cover,
                             ),
                           );
