@@ -8,6 +8,9 @@ import 'package:markdown/markdown.dart' as markdown;
 import 'dart:math' as math;
 
 class CropPlanningScreen extends StatefulWidget {
+  final String? selectedCropName; // Add this parameter
+
+  const CropPlanningScreen({Key? key, this.selectedCropName}) : super(key: key);
   @override
   _CropPlanningScreenState createState() => _CropPlanningScreenState();
 }
@@ -378,6 +381,7 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
   final _farmSizeController = TextEditingController();
   final _additionalNotesController = TextEditingController();
   final _scrollController = ScrollController();
+  final _cropController = TextEditingController();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   String _selectedLanguage = 'en-IN';
@@ -393,25 +397,25 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
     'mr-IN': 'मराठी (Marathi)',
     'pa-IN': 'ਪੰਜਾਬੀ (Punjabi)',
   };
-
-  String _selectedCrop = 'Rice';
   String _soilType = 'Loamy';
-  String _season = 'Kharif';
   bool _isLoading = false;
+  String _detectedSeason = '';
   String _result = '';
+  String _detectSeasonFromLocation(String location) {
+    // Get current month
+    DateTime now = DateTime.now();
+    int month = now.month;
 
-  final List<String> _crops = [
-    'Rice',
-    'Wheat',
-    'Maize',
-    'Cotton',
-    'Sugarcane',
-    'Tomato',
-    'Potato',
-    'Onion',
-    'Soybean',
-    'Mustard'
-  ];
+    // Basic season detection based on Indian agricultural calendar
+    // This can be enhanced with more sophisticated location-based logic
+    if (month >= 6 && month <= 10) {
+      return 'Kharif'; // Monsoon season crops (June-October)
+    } else if (month >= 11 || month <= 3) {
+      return 'Rabi'; // Winter season crops (November-March)
+    } else {
+      return 'Zaid'; // Summer season crops (April-May)
+    }
+  }
 
   final List<String> _soilTypes = [
     'Loamy',
@@ -422,21 +426,24 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
     'Chalk'
   ];
 
-  final List<String> _seasons = ['Kharif', 'Rabi', 'Zaid'];
-
   String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
 
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
+ @override
+void initState() {
+  super.initState();
+  _animationController = AnimationController(
+    duration: Duration(milliseconds: 800),
+    vsync: this,
+  );
+  _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+  );
+  
+  // Initialize crop controller with the passed crop name if available
+  if (widget.selectedCropName != null && widget.selectedCropName!.isNotEmpty) {
+    _cropController.text = widget.selectedCropName!;
   }
+}
 
   @override
   void dispose() {
@@ -445,6 +452,7 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
     _locationController.dispose();
     _farmSizeController.dispose();
     _additionalNotesController.dispose();
+    _cropController.dispose();
     super.dispose();
   }
 
@@ -457,6 +465,9 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
       return;
     }
 
+    // Detect season based on location
+    _detectedSeason = _detectSeasonFromLocation(_locationController.text);
+
     setState(() {
       _isLoading = true;
       _result = '';
@@ -468,8 +479,8 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
           : 'Please respond in ${_languages[_selectedLanguage]} language. ';
 
       final response = await _callGeminiAPI(
-          "${languageInstruction}Generate a comprehensive crop planning schedule for $_selectedCrop in ${_locationController.text}. "
-          "Farm details: Size: ${_farmSizeController.text} acres, Soil type: $_soilType, Season: $_season. "
+          "${languageInstruction}Generate a comprehensive crop planning schedule for ${_cropController.text} in ${_locationController.text}. "
+          "Farm details: Size: ${_farmSizeController.text} acres, Soil type: $_soilType, Season: $_detectedSeason (auto-detected based on current time and location). "
           "Please provide detailed information including:\n"
           "1. **Optimal Planting Dates and Timeline**\n"
           "2. **Soil Preparation Requirements**\n"
@@ -544,7 +555,8 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
             child: _buildStatCard('Soil Type', _soilType, Icons.landscape)),
         SizedBox(width: 12),
         Expanded(
-            child: _buildStatCard('Season', _season, Icons.calendar_today)),
+            child: _buildStatCard(
+                'Season', _detectedSeason, Icons.calendar_today)),
       ],
     );
   }
@@ -712,7 +724,7 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
 
   Future<String> _callGeminiAPI(String prompt) async {
     final url = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent');
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent');
 
     try {
       final response = await http.post(
@@ -939,12 +951,14 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
 
               // Input forms
               _buildInputCard([
-                _buildDropdownField(
-                    'Select Crop',
-                    _selectedCrop,
-                    _crops,
-                    (value) => setState(() => _selectedCrop = value!),
-                    Icons.eco),
+                _buildTextFormField(
+                    'Crop Name',
+                    _cropController,
+                    'Enter the crop you want to grow (e.g., Rice, Wheat, Tomato)',
+                    Icons.eco,
+                    validator: (value) => value?.isEmpty == true
+                        ? 'Please enter crop name'
+                        : null),
                 SizedBox(height: 20),
                 _buildTextFormField('Farm Location', _locationController,
                     'Enter your farm location (city, state)', Icons.location_on,
@@ -956,49 +970,12 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
               SizedBox(height: 16),
 
               _buildInputCard([
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    if (constraints.maxWidth < 400) {
-                      return Column(
-                        children: [
-                          _buildDropdownField(
-                              'Soil Type',
-                              _soilType,
-                              _soilTypes,
-                              (value) => setState(() => _soilType = value!),
-                              Icons.landscape),
-                          SizedBox(height: 16),
-                          _buildDropdownField(
-                              'Season',
-                              _season,
-                              _seasons,
-                              (value) => setState(() => _season = value!),
-                              Icons.calendar_today),
-                        ],
-                      );
-                    } else {
-                      return Row(
-                        children: [
-                          Expanded(
-                              child: _buildDropdownField(
-                                  'Soil Type',
-                                  _soilType,
-                                  _soilTypes,
-                                  (value) => setState(() => _soilType = value!),
-                                  Icons.landscape)),
-                          SizedBox(width: 16),
-                          Expanded(
-                              child: _buildDropdownField(
-                                  'Season',
-                                  _season,
-                                  _seasons,
-                                  (value) => setState(() => _season = value!),
-                                  Icons.calendar_today)),
-                        ],
-                      );
-                    }
-                  },
-                ),
+                _buildDropdownField(
+                    'Soil Type',
+                    _soilType,
+                    _soilTypes,
+                    (value) => setState(() => _soilType = value!),
+                    Icons.landscape),
                 SizedBox(height: 20),
                 _buildTextFormField('Farm Size', _farmSizeController,
                     'Enter area in acres', Icons.square_foot,
