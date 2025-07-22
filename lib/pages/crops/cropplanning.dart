@@ -448,53 +448,6 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
     super.dispose();
   }
 
-  void _showLanguageSelectionDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.language, color: Color(0xFF4CAF50), size: 24),
-              SizedBox(width: 8),
-              Text('Select Language',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-            ],
-          ),
-          content: Container(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: _languages.length,
-              itemBuilder: (context, index) {
-                String langCode = _languages.keys.elementAt(index);
-                String langName = _languages[langCode]!;
-                return RadioListTile<String>(
-                  title: Text(langName, style: TextStyle(fontSize: 16)),
-                  value: langCode,
-                  groupValue: _selectedLanguage,
-                  activeColor: Color(0xFF4CAF50),
-                  onChanged: (String? value) {
-                    setState(() {
-                      _selectedLanguage = value!;
-                    });
-                    Navigator.of(context).pop();
-                  },
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel', style: TextStyle(color: Color(0xFF4CAF50))),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Future<void> _generateCropPlan() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -698,35 +651,6 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
       ),
       child: Column(
         children: [
-          // ADD LANGUAGE INFO ROW:
-          Container(
-            padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Color(0xFFF8F9FA),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Color(0xFFE8F5E9)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.language, color: Color(0xFF4CAF50), size: 20),
-                SizedBox(width: 8),
-                Text(
-                  'Language: ${_languages[_selectedLanguage]}',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF2E7D32)),
-                ),
-                Spacer(),
-                TextButton(
-                  onPressed: _showLanguageSelectionDialog,
-                  child: Text('Change',
-                      style: TextStyle(color: Color(0xFF4CAF50), fontSize: 12)),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -982,14 +906,23 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
         elevation: 0,
         centerTitle: true,
         actions: [
-          // ADD THIS ACTION BUTTON:
-          Container(
-            margin: EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Icon(Icons.language, size: 24),
-              onPressed: _showLanguageSelectionDialog,
-              tooltip: 'Select Language',
-            ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.language, color: Colors.white),
+            onSelected: (String value) {
+              setState(() {
+                _selectedLanguage = value;
+              });
+              // Optional: Add any initialization function if needed
+              // _initializeTts(); // Add this if you have TTS functionality
+            },
+            itemBuilder: (BuildContext context) {
+              return _languages.entries.map((entry) {
+                return PopupMenuItem<String>(
+                  value: entry.key,
+                  child: Text(entry.value),
+                );
+              }).toList();
+            },
           ),
         ],
       ),
