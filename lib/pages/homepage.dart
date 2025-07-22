@@ -45,7 +45,7 @@ class _HomePageState extends State<HomePage> {
     RentProductsForm(),
     DroneMonitoringScreen(),
   ];
-  
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index; // Update the selected index
@@ -344,45 +344,45 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         child: FloatingActionButton(
-  onPressed: _openChatbot,
-  backgroundColor: Colors.transparent,
-  elevation: 0,
-  child: Container(
-    width: 68,
-    height: 68,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      gradient: LinearGradient(
-        colors: [
-          Colors.green.shade600,
-          Colors.green.shade700,
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: const Color.fromARGB(255, 2, 51, 4).withOpacity(0.4),
-          blurRadius: 12,
-          offset: const Offset(0, 4),
+          onPressed: _openChatbot,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  Colors.green.shade600,
+                  Colors.green.shade700,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color.fromARGB(255, 2, 51, 4).withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Lottie.asset(
+              'assets/ChatBotAnimatedIcon.json',
+              width: 40,
+              height: 40,
+              fit: BoxFit.contain,
+              repeat: true,
+              animate: true,
+            ),
+          ),
         ),
-        BoxShadow(
-          color: Colors.black.withOpacity(0.2),
-          blurRadius: 6,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Lottie.asset(
-      'assets/ChatBotAnimatedIcon.json',
-      width: 40,
-      height: 40,
-      fit: BoxFit.contain,
-      repeat: true,
-      animate: true,
-    ),
-  ),
-),
       ),
     );
   }
@@ -496,7 +496,8 @@ class _HomePageState extends State<HomePage> {
                         valueColor: Colors.green[300]!),
                     const SizedBox(height: 24),
                     Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 12),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [Colors.green[200]!, Colors.green[400]!],
@@ -596,7 +597,8 @@ class _HomePageState extends State<HomePage> {
   }
 
 // Helper method to build detail rows
-  Widget _buildDetailRow(String label, String value, {Color valueColor = Colors.black}) {
+  Widget _buildDetailRow(String label, String value,
+      {Color valueColor = Colors.black}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -619,4 +621,3 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-

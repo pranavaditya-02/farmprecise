@@ -3,14 +3,373 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import 'package:markdown/markdown.dart' as markdown;
+
+import 'dart:math' as math;
 
 class CropPlanningScreen extends StatefulWidget {
   @override
   _CropPlanningScreenState createState() => _CropPlanningScreenState();
 }
 
+class TableBuilder extends MarkdownElementBuilder {
+  final BuildContext context;
 
+  TableBuilder(this.context);
+
+  @override
+  Widget? visitElementAfter(
+      markdown.Element element, TextStyle? preferredStyle) {
+    if (element.tag != 'table') return null;
+
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Color(0xFFE0E0E0)),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Scroll indicator
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.swipe, size: 16, color: Color(0xFF666666)),
+                SizedBox(width: 8),
+                Text(
+                  'Swipe left/right to view all columns',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF666666),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                Spacer(),
+                Icon(Icons.table_chart, size: 16, color: Color(0xFF4CAF50)),
+              ],
+            ),
+          ),
+          // Enhanced horizontal scrollable table
+          Container(
+            height: _calculateTableHeight(element),
+            child: Scrollbar(
+              thumbVisibility: true,
+              trackVisibility: true,
+              controller: ScrollController(),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: BouncingScrollPhysics(),
+                padding: EdgeInsets.all(16),
+                child: Container(
+                  // Ensure minimum width for proper scrolling
+                  constraints: BoxConstraints(
+                    minWidth: _calculateMinTableWidth(element),
+                  ),
+                  child: _buildEnhancedTable(element),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _calculateTableHeight(markdown.Element element) {
+    int rowCount = 0;
+
+    for (var child in element.children ?? []) {
+      if (child.tag == 'thead' || child.tag == 'tbody') {
+        for (var row in child.children ?? []) {
+          if (row.tag == 'tr') rowCount++;
+        }
+      } else if (child.tag == 'tr') {
+        rowCount++;
+      }
+    }
+
+    // Header row (60px) + data rows (80px each) + padding
+    return math.min(400.0, (rowCount * 80.0) + 100);
+  }
+
+  double _calculateMinTableWidth(markdown.Element element) {
+    int maxColumns = 0;
+
+    for (var child in element.children ?? []) {
+      if (child.tag == 'thead' || child.tag == 'tbody') {
+        for (var tableRow in child.children ?? []) {
+          if (tableRow.tag == 'tr') {
+            int columnCount = tableRow.children
+                    ?.where((c) => c.tag == 'td' || c.tag == 'th')
+                    .length ??
+                0;
+            maxColumns = math.max(maxColumns, columnCount);
+          }
+        }
+      } else if (child.tag == 'tr') {
+        int columnCount = child.children
+                ?.where((c) => c.tag == 'td' || c.tag == 'th')
+                .length ??
+            0;
+        maxColumns = math.max(maxColumns, columnCount);
+      }
+    }
+
+    // Minimum 180px per column for better readability
+    double screenWidth = MediaQuery.of(context).size.width;
+    double calculatedWidth = maxColumns * 180.0;
+
+    // Ensure table is at least 1.2x screen width for proper scrolling
+    return math.max(calculatedWidth, screenWidth * 1.2);
+  }
+
+  // Fix for the _buildEnhancedTable method in your CropPlanningScreen
+
+  Widget _buildEnhancedTable(markdown.Element element) {
+    List<List<String>> tableData = [];
+    bool hasHeader = false;
+
+    // Parse table structure
+    for (var child in element.children ?? []) {
+      if (child.tag == 'thead') {
+        hasHeader = true;
+        for (var row in child.children ?? []) {
+          if (row.tag == 'tr') {
+            tableData.add(_extractRowData(row));
+          }
+        }
+      } else if (child.tag == 'tbody') {
+        for (var row in child.children ?? []) {
+          if (row.tag == 'tr') {
+            tableData.add(_extractRowData(row));
+          }
+        }
+      } else if (child.tag == 'tr') {
+        // Fix: Use 'child' instead of 'row' since 'row' is not defined in this scope
+        tableData.add(_extractRowData(child));
+      }
+    }
+
+    if (tableData.isEmpty) return Container();
+
+    // Calculate column count and normalize data
+    int maxColumns = tableData.fold<int>(
+        0, (max, row) => row.length > max ? row.length : max);
+
+    // Ensure all rows have the same number of columns
+    for (var row in tableData) {
+      while (row.length < maxColumns) {
+        row.add('');
+      }
+    }
+
+    return DataTable(
+      border: TableBorder(
+        horizontalInside: BorderSide(color: Color(0xFFE8E8E8), width: 0.5),
+        verticalInside: BorderSide(color: Color(0xFFE8E8E8), width: 0.5),
+      ),
+      headingRowColor: MaterialStateProperty.all(Color(0xFFF8F9FA)),
+      headingTextStyle: TextStyle(
+        fontWeight: FontWeight.bold,
+        color: Color(0xFF2E7D32),
+        fontSize: 14,
+      ),
+      dataTextStyle: TextStyle(
+        color: Color(0xFF424242),
+        fontSize: 13,
+      ),
+      // Enhanced spacing for better mobile experience
+      columnSpacing: 20,
+      horizontalMargin: 0,
+      headingRowHeight: 60,
+      dataRowHeight: 80,
+      // Enable row selection for better UX
+      showCheckboxColumn: false,
+      columns: _buildEnhancedDataColumns(
+          tableData.isNotEmpty ? tableData.first : [], hasHeader, maxColumns),
+      rows: _buildEnhancedDataRows(tableData, hasHeader),
+    );
+  }
+
+  List<String> _extractRowData(markdown.Element row) {
+    List<String> rowData = [];
+    for (var cell in row.children ?? []) {
+      if (cell.tag == 'td' || cell.tag == 'th') {
+        String cellText = cell.textContent.trim();
+        // Handle long text by adding line breaks for better mobile display
+        if (cellText.length > 30) {
+          cellText = cellText.replaceAll(RegExp(r'(.{30})'), '\n');
+        }
+        rowData.add(cellText);
+      }
+    }
+    return rowData;
+  }
+
+  List<DataColumn> _buildEnhancedDataColumns(
+      List<String> headerRow, bool hasHeader, int columnCount) {
+    // Fixed column width for consistent scrolling
+    double columnWidth = 160.0;
+
+    if (!hasHeader || headerRow.isEmpty) {
+      // Generate generic column headers if no header exists
+      return List.generate(
+        headerRow.isEmpty ? columnCount : headerRow.length,
+        (index) => DataColumn(
+          label: Container(
+            width: columnWidth,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.table_rows, size: 16, color: Color(0xFF4CAF50)),
+                SizedBox(height: 4),
+                Text(
+                  'Col ${index + 1}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return headerRow
+        .map((header) => DataColumn(
+              label: Container(
+                width: columnWidth,
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      header,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: Color(0xFF2E7D32),
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ))
+        .toList();
+  }
+
+  List<DataRow> _buildEnhancedDataRows(
+      List<List<String>> tableData, bool hasHeader) {
+    // Skip header row if it exists
+    List<List<String>> dataRows = hasHeader && tableData.isNotEmpty
+        ? tableData.skip(1).toList()
+        : tableData;
+
+    double columnWidth = 160.0;
+
+    return dataRows.asMap().entries.map((entry) {
+      int index = entry.key;
+      List<String> row = entry.value;
+
+      return DataRow(
+        // Alternate row colors for better readability
+        color: MaterialStateProperty.all(
+            index.isEven ? Colors.white : Color(0xFFFAFAFA)),
+        cells: row
+            .map((cellData) => DataCell(
+                  Container(
+                    width: columnWidth,
+                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          cellData.isNotEmpty ? cellData : '-',
+                          textAlign: TextAlign.left,
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cellData.isNotEmpty
+                                ? Color(0xFF424242)
+                                : Color(0xFF999999),
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  onTap: cellData.isNotEmpty
+                      ? () {
+                          // Show full cell content in a dialog for long text
+                          if (cellData.length > 50) {
+                            _showCellContentDialog(cellData);
+                          }
+                        }
+                      : null,
+                ))
+            .toList(),
+      );
+    }).toList();
+  }
+
+  void _showCellContentDialog(String content) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.info_outline, color: Color(0xFF4CAF50)),
+              SizedBox(width: 8),
+              Text('Cell Content', style: TextStyle(fontSize: 16)),
+            ],
+          ),
+          content: Container(
+            constraints: BoxConstraints(maxWidth: 300),
+            child: SingleChildScrollView(
+              child: Text(
+                content,
+                style: TextStyle(fontSize: 14, height: 1.5),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Close', style: TextStyle(color: Color(0xFF4CAF50))),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
 
 class _CropPlanningScreenState extends State<CropPlanningScreen>
     with SingleTickerProviderStateMixin {
@@ -21,11 +380,20 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
   final _scrollController = ScrollController();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  String _selectedLanguage = 'en-IN';
+  final Map<String, String> _languages = {
+    'en-IN': 'English (India)',
+    'hi-IN': 'हिंदी (Hindi)',
+    'ta-IN': 'தமிழ் (Tamil)',
+    'kn-IN': 'ಕನ್ನಡ (Kannada)',
+    'te-IN': 'తెలుగు (Telugu)',
+    'ml-IN': 'മലയാളം (Malayalam)',
+    'bn-IN': 'বাংলা (Bengali)',
+    'gu-IN': 'ગુજરાતી (Gujarati)',
+    'mr-IN': 'मराठी (Marathi)',
+    'pa-IN': 'ਪੰਜਾਬੀ (Punjabi)',
+  };
 
-  late FlutterTts flutterTts;
-bool isSpeaking = false;
-bool isTtsEnabled = false;
-  
   String _selectedCrop = 'Rice';
   String _soilType = 'Loamy';
   String _season = 'Kharif';
@@ -33,14 +401,27 @@ bool isTtsEnabled = false;
   String _result = '';
 
   final List<String> _crops = [
-    'Rice', 'Wheat', 'Maize', 'Cotton', 'Sugarcane', 
-    'Tomato', 'Potato', 'Onion', 'Soybean', 'Mustard'
+    'Rice',
+    'Wheat',
+    'Maize',
+    'Cotton',
+    'Sugarcane',
+    'Tomato',
+    'Potato',
+    'Onion',
+    'Soybean',
+    'Mustard'
   ];
-  
+
   final List<String> _soilTypes = [
-    'Loamy', 'Clay', 'Sandy', 'Silt', 'Peat', 'Chalk'
+    'Loamy',
+    'Clay',
+    'Sandy',
+    'Silt',
+    'Peat',
+    'Chalk'
   ];
-  
+
   final List<String> _seasons = ['Kharif', 'Rabi', 'Zaid'];
 
   String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
@@ -55,53 +436,70 @@ bool isTtsEnabled = false;
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    
-    // Initialize TTS
-    _initTts();
-  }
-
-  Future<void> _initTts() async {
-    try {
-      flutterTts = FlutterTts();
-      await flutterTts?.setLanguage("en-US");
-      await flutterTts?.setSpeechRate(0.5);
-      await flutterTts?.setVolume(1.0);
-      await flutterTts?.setPitch(1.0);
-      
-      flutterTts?.setCompletionHandler(() {
-        if (mounted) {
-          setState(() {
-            isSpeaking = false;
-          });
-        }
-      });
-      
-      flutterTts?.setErrorHandler((msg) {
-        print("TTS Error: $msg");
-        if (mounted) {
-          setState(() {
-            isSpeaking = false;
-          });
-        }
-      });
-    } catch (e) {
-      print("TTS initialization error: $e");
-    }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     _scrollController.dispose();
-    flutterTts?.stop();
+    _locationController.dispose();
+    _farmSizeController.dispose();
+    _additionalNotesController.dispose();
     super.dispose();
+  }
+
+  void _showLanguageSelectionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.language, color: Color(0xFF4CAF50), size: 24),
+              SizedBox(width: 8),
+              Text('Select Language',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          content: Container(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _languages.length,
+              itemBuilder: (context, index) {
+                String langCode = _languages.keys.elementAt(index);
+                String langName = _languages[langCode]!;
+                return RadioListTile<String>(
+                  title: Text(langName, style: TextStyle(fontSize: 16)),
+                  value: langCode,
+                  groupValue: _selectedLanguage,
+                  activeColor: Color(0xFF4CAF50),
+                  onChanged: (String? value) {
+                    setState(() {
+                      _selectedLanguage = value!;
+                    });
+                    Navigator.of(context).pop();
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel', style: TextStyle(color: Color(0xFF4CAF50))),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _generateCropPlan() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_apiKey.isEmpty) {
-      _showErrorDialog('API Configuration Error', 
+      _showErrorDialog('API Configuration Error',
           'Please add GEMINI_API_KEY to your .env file');
       return;
     }
@@ -112,36 +510,32 @@ bool isTtsEnabled = false;
     });
 
     try {
-      // Replace the existing prompt in _generateCropPlan method with:
-final response = await _callGeminiAPI(
-  "Generate a comprehensive crop planning schedule for $_selectedCrop in ${_locationController.text}. "
-  "Farm details: Size: ${_farmSizeController.text} acres, Soil type: $_soilType, Season: $_season. "
-  "Please provide detailed information including:\n"
-  "1. **Optimal Planting Dates and Timeline**\n"
-  "2. **Soil Preparation Requirements**\n"
-  "3. **Fertilizer Schedule with Specific Quantities**\n"
-  "4. **Irrigation Plan and Water Requirements**\n"
-  "5. **Pest Management Strategies**\n"
-  "6. **Expected Harvest Timing and Yield**\n"
-  "7. **Market Considerations and Pricing**\n"
-  "Additional notes: ${_additionalNotesController.text}. "
-  "Format your response using proper markdown: "
-  "- Use ## for main headings "
-  "- Use ### for subheadings "
-  "- Use **bold** for emphasis "
-  "- Use * for bullet points "
-  "- Use numbered lists where appropriate "
-  "- Use tables for data presentation where suitable"
-);
+      String languageInstruction = _selectedLanguage == 'en-IN'
+          ? ''
+          : 'Please respond in ${_languages[_selectedLanguage]} language. ';
+
+      final response = await _callGeminiAPI(
+          "${languageInstruction}Generate a comprehensive crop planning schedule for $_selectedCrop in ${_locationController.text}. "
+          "Farm details: Size: ${_farmSizeController.text} acres, Soil type: $_soilType, Season: $_season. "
+          "Please provide detailed information including:\n"
+          "1. **Optimal Planting Dates and Timeline**\n"
+          "2. **Soil Preparation Requirements**\n"
+          "3. **Fertilizer Schedule with Specific Quantities**\n"
+          "4. **Irrigation Plan and Water Requirements**\n"
+          "5. **Pest Management Strategies**\n"
+          "6. **Expected Harvest Timing and Yield**\n"
+          "7. **Market Considerations and Pricing**\n"
+          "Additional notes: ${_additionalNotesController.text}. "
+          "Format your response using proper markdown with tables where appropriate. "
+          "Use | for table columns, ## for main headings, ### for subheadings, **bold** for emphasis, and * for bullet points.");
 
       setState(() {
         _result = response;
         _isLoading = false;
       });
-      
+
       _animationController.forward();
-      
-      // Auto-scroll to result
+
       await Future.delayed(Duration(milliseconds: 300));
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
@@ -173,286 +567,31 @@ final response = await _callGeminiAPI(
     );
   }
 
-  Widget _buildFormattedResult(String content) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      // Header with plan summary and TTS controls
-      Container(
-        padding: EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF2E7D32), Color(0xFF4CAF50)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.agriculture,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-                SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Crop Planning Report',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '$_selectedCrop • ${_farmSizeController.text} acres • $_season season',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.auto_awesome, color: Colors.white, size: 16),
-                      SizedBox(width: 4),
-                      Text(
-                        'AI Generated',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 16),
-            // TTS Controls
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  onPressed: () => _toggleTts(),
-                  icon: Icon(
-                    isSpeaking ? Icons.volume_off : Icons.volume_up,
-                    color: Colors.white,
-                  ),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    padding: EdgeInsets.all(12),
-                  ),
-                ),
-                SizedBox(width: 8),
-                Text(
-                  isSpeaking ? 'Tap to stop' : 'Tap to listen',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      
-      SizedBox(height: 20),
-      
-      // Quick stats cards
-      _buildQuickStatsRow(),
-      
-      SizedBox(height: 24),
-      
-      // Markdown content
-      Container(
-        padding: EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: MarkdownBody(
-          data: _formatContentAsMarkdown(content),
-          styleSheet: MarkdownStyleSheet(
-            h1: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2E7D32),
-            ),
-            h2: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF4CAF50),
-            ),
-            h3: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF2E7D32),
-            ),
-            p: TextStyle(
-              fontSize: 15,
-              color: Color(0xFF424242),
-              height: 1.6,
-            ),
-            strong: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2E7D32),
-            ),
-            listBullet: TextStyle(
-              color: Color(0xFF4CAF50),
-              fontSize: 16,
-            ),
-            tableHead: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2E7D32),
-            ),
-            tableBody: TextStyle(
-              color: Color(0xFF424242),
-            ),
-          ),
-        ),
-      ),
-      
-      SizedBox(height: 24),
-      
-      // Action buttons
-      _buildActionButtons(),
-    ],
-  );
-}
-
-// Add these methods after the _buildActionButtons method
- String _formatContentAsMarkdown(String content) {
-    // Clean up the content first
-    String formatted = content
-        .replaceAll(RegExp(r'#{3,}\s*\$\d+'), '') // Remove ### $1 patterns
-        .replaceAll(RegExp(r'\*{2,}\s*#{3,}\s*\$\d+\s*\*{2,}'), '') // Remove **### $1 ** patterns
-        .replaceAll(RegExp(r'#{3,}\s*'), '### ') // Clean up ### patterns
-        .replaceAll(RegExp(r'\*{2,}'), '**') // Clean up multiple asterisks
-        
-        .replaceAll(RegExp(r'•\s*'), '* ') // Convert bullets
-        .replaceAll(RegExp(r'-\s*'), '* ') // Convert dashes to bullets
-        .replaceAll(RegExp(r'\n\s*\n\s*\n+'), '\n\n') // Clean up excessive newlines
+  String _cleanTextForTts(String text) {
+    return text
+        .replaceAll(RegExp(r'#{1,6}\s*'), '')
+        .replaceAll(RegExp(r'\*{1,2}([^*]+)\*{1,2}'), r'$1')
+        .replaceAll(RegExp(r'`([^`]+)`'), r'$1')
+        .replaceAll(RegExp(r'[_~\[\](){}|]'), '')
+        .replaceAll(RegExp(r'[🌱🦠📊🧪🌍📈💡📸🖼️📄]'), '')
+        .replaceAll(RegExp(r'[•\-]\s*'), 'Point: ')
+        .replaceAll(RegExp(r'\n\s*\n'), '. ')
+        .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
-    
-    return formatted;
   }
 
-void _toggleTts() async {
-    if (flutterTts == null) {
-      await _initTts();
-      if (flutterTts == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Text-to-speech is not available on this device'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-    }
-
-    try {
-      if (isSpeaking) {
-        await flutterTts?.stop();
-        setState(() {
-          isSpeaking = false;
-        });
-      } else {
-        String cleanText = _cleanTextForTts(_result);
-        if (cleanText.isNotEmpty) {
-          setState(() {
-            isSpeaking = true;
-          });
-          await flutterTts?.speak(cleanText);
-        }
-      }
-    } catch (e) {
-      print("TTS error: $e");
-      setState(() {
-        isSpeaking = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error with text-to-speech: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
- String _cleanTextForTts(String text) {
-    String cleanText = text
-        // Remove all markdown formatting
-        .replaceAll(RegExp(r'#{1,6}\s*'), '') // Remove headers
-        .replaceAll(RegExp(r'\*{1,2}([^*]+)\*{1,2}'), r'$1') // Remove bold/italic
-        .replaceAll(RegExp(r'`([^`]+)`'), r'$1') // Remove code blocks
-        .replaceAll(RegExp(r'[_~\[\](){}]'), '') // Remove other markdown chars
-        .replaceAll(RegExp(r'[🌱🦠📊🧪🌍📈💡📸🖼️📄]'), '') // Remove emojis
-        .replaceAll(RegExp(r'#{3,}\s*\$\d+'), '') // Remove ### $1 patterns
-        .replaceAll(RegExp(r'\*{2,}\s*#{3,}\s*\$\d+\s*\*{2,}'), '') // Remove **### $1 ** patterns
-        .replaceAll(RegExp(r'[•\-]\s*'), 'Point: ') // Convert bullets to "Point:"
-        .replaceAll(RegExp(r'\n\s*\n'), '. ') // Convert paragraph breaks to periods
-        .replaceAll(RegExp(r'\s+'), ' ') // Replace multiple spaces with single space
-        .replaceAll(RegExp(r'[^\w\s.,!?;:]'), '') // Keep only alphanumeric, spaces, and basic punctuation
-        .trim();
-    
-    // Limit text length for TTS (optional - to prevent very long speeches)
-    if (cleanText.length > 1000) {
-      cleanText = cleanText.substring(0, 1000) + "... Content truncated for speech.";
-    }
-    
-    return cleanText;
-  }
-
-
-  Widget _buildQuickStatsRow() {
+  Widget _buildQuickStats() {
     return Row(
       children: [
-        Expanded(child: _buildStatCard('Location', _locationController.text, Icons.location_on)),
+        Expanded(
+            child: _buildStatCard(
+                'Location', _locationController.text, Icons.location_on)),
         SizedBox(width: 12),
-        Expanded(child: _buildStatCard('Soil Type', _soilType, Icons.landscape)),
+        Expanded(
+            child: _buildStatCard('Soil Type', _soilType, Icons.landscape)),
         SizedBox(width: 12),
-        Expanded(child: _buildStatCard('Season', _season, Icons.calendar_today)),
+        Expanded(
+            child: _buildStatCard('Season', _season, Icons.calendar_today)),
       ],
     );
   }
@@ -466,10 +605,9 @@ void _toggleTts() async {
         border: Border.all(color: Color(0xFFE8F5E9)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: Offset(0, 2))
         ],
       ),
       child: Column(
@@ -477,86 +615,70 @@ void _toggleTts() async {
         children: [
           Icon(icon, color: Color(0xFF4CAF50), size: 20),
           SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          Text(title,
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500)),
           SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2E7D32),
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2E7D32)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
         ],
       ),
     );
   }
 
-  Widget _buildContentSection(Map<String, dynamic> section) {
+  Widget _buildMarkdownContent() {
     return Container(
-      margin: EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: Offset(0, 2))
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Color(0xFFF8F9FA),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  section['icon'] as IconData,
-                  color: Color(0xFF4CAF50),
-                  size: 24,
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    section['title'] as String,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E7D32),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(20),
-            child: SelectableText(
-              section['content'] as String,
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(0xFF424242),
-                height: 1.6,
-              ),
-            ),
-          ),
-        ],
+      child: MarkdownBody(
+        data: _result,
+        builders: {
+          'table': TableBuilder(context),
+        },
+        styleSheet: MarkdownStyleSheet(
+          h1: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2E7D32)),
+          h2: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF4CAF50)),
+          h3: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF2E7D32)),
+          p: TextStyle(fontSize: 15, color: Color(0xFF424242), height: 1.6),
+          strong:
+              TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2E7D32)),
+          listBullet: TextStyle(color: Color(0xFF4CAF50), fontSize: 16),
+          // Enhanced table styling
+          tableHead: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2E7D32),
+              fontSize: 14),
+          tableBody: TextStyle(color: Color(0xFF424242), fontSize: 14),
+          tableBorder: TableBorder.all(color: Color(0xFFE0E0E0), width: 1),
+          tableHeadAlign: TextAlign.center,
+          tableCellsPadding: EdgeInsets.all(12),
+        ),
+        selectable: true,
       ),
     );
   }
@@ -569,19 +691,48 @@ void _toggleTts() async {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: Offset(0, 2))
         ],
       ),
       child: Column(
         children: [
+          // ADD LANGUAGE INFO ROW:
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Color(0xFFE8F5E9)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.language, color: Color(0xFF4CAF50), size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Language: ${_languages[_selectedLanguage]}',
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF2E7D32)),
+                ),
+                Spacer(),
+                TextButton(
+                  onPressed: _showLanguageSelectionDialog,
+                  child: Text('Change',
+                      style: TextStyle(color: Color(0xFF4CAF50), fontSize: 12)),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _saveOrExportPlan(),
+                  onPressed: () =>
+                      _showSnackBar('Export functionality will be implemented'),
                   icon: Icon(Icons.download, size: 20),
                   label: Text('Export Plan'),
                   style: ElevatedButton.styleFrom(
@@ -589,8 +740,7 @@ void _toggleTts() async {
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                        borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
                   ),
                 ),
@@ -598,7 +748,8 @@ void _toggleTts() async {
               SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _sharePlan(),
+                  onPressed: () =>
+                      _showSnackBar('Share functionality will be implemented'),
                   icon: Icon(Icons.share, size: 20),
                   label: Text('Share Plan'),
                   style: OutlinedButton.styleFrom(
@@ -606,8 +757,7 @@ void _toggleTts() async {
                     side: BorderSide(color: Color(0xFF4CAF50)),
                     padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),
@@ -615,135 +765,43 @@ void _toggleTts() async {
           ),
           SizedBox(height: 12),
           TextButton.icon(
-            onPressed: () => _generateNewPlan(),
+            onPressed: () => setState(() {
+              _result = '';
+              _animationController.reset();
+            }),
             icon: Icon(Icons.refresh, size: 20),
             label: Text('Generate New Plan'),
             style: TextButton.styleFrom(
-              foregroundColor: Color(0xFF4CAF50),
-              padding: EdgeInsets.symmetric(vertical: 12),
-            ),
+                foregroundColor: Color(0xFF4CAF50),
+                padding: EdgeInsets.symmetric(vertical: 12)),
           ),
         ],
       ),
     );
   }
 
-  List<Map<String, dynamic>> _parseContent(String content) {
-    // Simple content parsing - in a real app, you'd want more sophisticated parsing
-    final sections = <Map<String, dynamic>>[];
-    final lines = content.split('\n');
-    
-    String currentSection = '';
-    String currentContent = '';
-    
-    for (String line in lines) {
-      line = line.trim();
-      if (line.isEmpty) continue;
-      
-      // Check if line looks like a section header
-      if (line.contains('1.') || line.contains('2.') || line.contains('3.') ||
-          line.contains('4.') || line.contains('5.') || line.contains('6.') ||
-          line.contains('7.') || line.toLowerCase().contains('planting') ||
-          line.toLowerCase().contains('fertilizer') || line.toLowerCase().contains('irrigation') ||
-          line.toLowerCase().contains('harvest') || line.toLowerCase().contains('pest')) {
-        
-        // Save previous section if exists
-        if (currentSection.isNotEmpty && currentContent.isNotEmpty) {
-          sections.add(_createSection(currentSection, currentContent));
-        }
-        
-        currentSection = line;
-        currentContent = '';
-      } else {
-        currentContent += line + '\n';
-      }
-    }
-    
-    // Add the last section
-    if (currentSection.isNotEmpty && currentContent.isNotEmpty) {
-      sections.add(_createSection(currentSection, currentContent));
-    }
-    
-    // If no sections were parsed, return the whole content as one section
-    if (sections.isEmpty) {
-      sections.add({
-        'title': 'Crop Planning Recommendations',
-        'content': content,
-        'icon': Icons.agriculture,
-      });
-    }
-    
-    return sections;
-  }
-
-  Map<String, dynamic> _createSection(String title, String content) {
-    IconData icon = Icons.agriculture;
-    
-    if (title.toLowerCase().contains('plant')) {
-      icon = Icons.eco;
-    } else if (title.toLowerCase().contains('fertilizer')) {
-      icon = Icons.science;
-    } else if (title.toLowerCase().contains('irrigation') || title.toLowerCase().contains('water')) {
-      icon = Icons.water_drop;
-    } else if (title.toLowerCase().contains('harvest')) {
-      icon = Icons.grass;
-    } else if (title.toLowerCase().contains('pest')) {
-      icon = Icons.bug_report;
-    } else if (title.toLowerCase().contains('market') || title.toLowerCase().contains('price')) {
-      icon = Icons.trending_up;
-    }
-    
-    return {
-      'title': title,
-      'content': content.trim(),
-      'icon': icon,
-    };
-  }
-
-  void _saveOrExportPlan() {
-    // Implement save/export functionality
+  void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Export functionality will be implemented'),
-        backgroundColor: Color(0xFF4CAF50),
-      ),
+      SnackBar(content: Text(message), backgroundColor: Color(0xFF4CAF50)),
     );
   }
 
-  void _sharePlan() {
-    // Implement share functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Share functionality will be implemented'),
-        backgroundColor: Color(0xFF4CAF50),
-      ),
-    );
-  }
+  Future<String> _callGeminiAPI(String prompt) async {
+    final url = Uri.parse(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent');
 
-  void _generateNewPlan() {
-    setState(() {
-      _result = '';
-      _animationController.reset();
-    });
-  }
-
-   Future<String> _callGeminiAPI(String prompt) async {
-    final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent');
-    
     try {
       final response = await http.post(
         url,
         headers: {
           'Content-Type': 'application/json',
-          'X-goog-api-key': _apiKey,
+          'X-goog-api-key': _apiKey
         },
         body: jsonEncode({
           'contents': [
             {
               'parts': [
-                {
-                  'text': prompt
-                }
+                {'text': prompt}
               ]
             }
           ],
@@ -758,18 +816,16 @@ void _toggleTts() async {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
         try {
-          String content = data['candidates'][0]['content']['parts'][0]['text'];
-          // Clean the content before returning
-          return content.replaceAll(RegExp(r'#{3,}\s*\$\d+'), '').trim();
+          return data['candidates'][0]['content']['parts'][0]['text'];
         } catch (e) {
           return 'Error parsing response: $e';
         }
       } else {
         try {
           final errorData = jsonDecode(response.body);
-          final errorMessage = errorData['error']?['message'] ?? 'Unknown error';
+          final errorMessage =
+              errorData['error']?['message'] ?? 'Unknown error';
           return 'API Error (${response.statusCode}): $errorMessage';
         } catch (e) {
           return 'HTTP Error (${response.statusCode}): ${response.body}';
@@ -779,62 +835,6 @@ void _toggleTts() async {
       return 'Network Error: Please check your internet connection. $e';
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: Text(
-          'Smart Crop Planning',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        controller: _scrollController,
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Hero section
-              _buildHeroSection(),
-              SizedBox(height: 24),
-              
-              // Input forms
-              _buildInputSection(),
-              SizedBox(height: 24),
-              
-              // Generate button
-              _buildGenerateButton(),
-              SizedBox(height: 32),
-              
-              // Results section
-              if (_result.isNotEmpty)
-                AnimatedBuilder(
-                  animation: _fadeAnimation,
-                  builder: (context, child) {
-                    return Opacity(
-                      opacity: _fadeAnimation.value,
-                      child: Transform.translate(
-                        offset: Offset(0, 20 * (1 - _fadeAnimation.value)),
-                        child: _buildFormattedResult(_result),
-                      ),
-                    );
-                  },
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-  
 
   Widget _buildHeroSection() {
     return Container(
@@ -848,195 +848,26 @@ void _toggleTts() async {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 12,
-            offset: Offset(0, 6),
-          ),
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 12,
+              offset: Offset(0, 6))
         ],
       ),
       child: Column(
         children: [
-          Text(
-            'AI-Powered Crop Planning',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-            textAlign: TextAlign.center,
-          ),
+          Text('AI-Powered Crop Planning',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
+              textAlign: TextAlign.center),
           SizedBox(height: 8),
           Text(
-            'Get personalized farming recommendations based on your location, soil type, and season',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withOpacity(0.9),
-            ),
-            textAlign: TextAlign.center,
-          ),
+              'Get personalized farming recommendations based on your location, soil type, and season',
+              style:
+                  TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9)),
+              textAlign: TextAlign.center),
         ],
-      ),
-    );
-  }
-
-  Widget _buildInputSection() {
-    return Column(
-      children: [
-        _buildInputCard([
-          _buildDropdownField(
-            'Select Crop',
-            _selectedCrop,
-            _crops,
-            (value) => setState(() => _selectedCrop = value!),
-            Icons.eco,
-          ),
-          SizedBox(height: 20),
-          _buildTextFormField(
-            'Farm Location',
-            _locationController,
-            'Enter your farm location (city, state)',
-            Icons.location_on,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your farm location';
-              }
-              return null;
-            },
-          ),
-        ]),
-        
-        SizedBox(height: 16),
-        
-        _buildInputCard([
-          LayoutBuilder(
-            builder: (context, constraints) {
-              // Use Column layout for small screens, Row for larger screens
-              if (constraints.maxWidth < 400) {
-                return Column(
-                  children: [
-                    _buildDropdownField(
-                      'Soil Type',
-                      _soilType,
-                      _soilTypes,
-                      (value) => setState(() => _soilType = value!),
-                      Icons.landscape,
-                    ),
-                    SizedBox(height: 16),
-                    _buildDropdownField(
-                      'Season',
-                      _season,
-                      _seasons,
-                      (value) => setState(() => _season = value!),
-                      Icons.calendar_today,
-                    ),
-                  ],
-                );
-              } else {
-                return Row(
-                  children: [
-                    Expanded(
-                      child: _buildDropdownField(
-                        'Soil Type',
-                        _soilType,
-                        _soilTypes,
-                        (value) => setState(() => _soilType = value!),
-                        Icons.landscape,
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: _buildDropdownField(
-                        'Season',
-                        _season,
-                        _seasons,
-                        (value) => setState(() => _season = value!),
-                        Icons.calendar_today,
-                      ),
-                    ),
-                  ],
-                );
-              }
-            },
-          ),
-          SizedBox(height: 20),
-          _buildTextFormField(
-            'Farm Size',
-            _farmSizeController,
-            'Enter area in acres',
-            Icons.square_foot,
-            keyboardType: TextInputType.number,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter farm size';
-              }
-              if (double.tryParse(value) == null) {
-                return 'Please enter a valid number';
-              }
-              return null;
-            },
-          ),
-        ]),
-        
-        SizedBox(height: 16),
-        
-        _buildInputCard([
-          _buildTextFormField(
-            'Additional Notes',
-            _additionalNotesController,
-            'Any specific requirements, local conditions, or concerns',
-            Icons.notes,
-            maxLines: 3,
-          ),
-        ]),
-      ],
-    );
-  }
-
-  Widget _buildGenerateButton() {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _generateCropPlan,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFF4CAF50),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 0,
-          disabledBackgroundColor: Colors.grey[300],
-        ),
-        child: _isLoading
-            ? Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Text(
-                    'Generating Your Plan...',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.auto_awesome, size: 24),
-                  SizedBox(width: 12),
-                  Text(
-                    'Generate Crop Plan',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
       ),
     );
   }
@@ -1049,36 +880,28 @@ void _toggleTts() async {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: Offset(0, 2))
         ],
       ),
       child: Column(children: children),
     );
   }
 
-  Widget _buildTextFormField(
-    String label,
-    TextEditingController controller,
-    String hint,
-    IconData icon, {
-    TextInputType keyboardType = TextInputType.text,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-  }) {
+  Widget _buildTextFormField(String label, TextEditingController controller,
+      String hint, IconData icon,
+      {TextInputType keyboardType = TextInputType.text,
+      int maxLines = 1,
+      String? Function(String?)? validator}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E7D32),
-          ),
-        ),
+        Text(label,
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E7D32))),
         SizedBox(height: 8),
         TextFormField(
           controller: controller,
@@ -1090,21 +913,17 @@ void _toggleTts() async {
             hintStyle: TextStyle(color: Colors.grey[400]),
             prefixIcon: Icon(icon, color: Color(0xFF4CAF50)),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Color(0xFFE0E0E0)),
-            ),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Color(0xFFE0E0E0))),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Color(0xFFE0E0E0)),
-            ),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Color(0xFFE0E0E0))),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Color(0xFF4CAF50), width: 2),
-            ),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Color(0xFF4CAF50), width: 2)),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.red, width: 1),
-            ),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.red)),
             filled: true,
             fillColor: Color(0xFFFAFAFA),
             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -1114,24 +933,16 @@ void _toggleTts() async {
     );
   }
 
-  Widget _buildDropdownField(
-    String label,
-    String value,
-    List<String> items,
-    Function(String?) onChanged,
-    IconData icon,
-  ) {
+  Widget _buildDropdownField(String label, String value, List<String> items,
+      Function(String?) onChanged, IconData icon) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF2E7D32),
-          ),
-        ),
+        Text(label,
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2E7D32))),
         SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
@@ -1145,20 +956,211 @@ void _toggleTts() async {
             decoration: InputDecoration(
               prefixIcon: Icon(icon, color: Color(0xFF4CAF50)),
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
-            items: items.map((item) {
-              return DropdownMenuItem(
-                value: item,
-                child: Text(
-                  item,
-                  style: TextStyle(fontSize: 16),
-                ),
-              );
-            }).toList(),
+            items: items
+                .map((item) => DropdownMenuItem(
+                    value: item,
+                    child: Text(item, style: TextStyle(fontSize: 16))))
+                .toList(),
           ),
         ),
       ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Color(0xFFF8F9FA),
+      appBar: AppBar(
+        title: Text('Smart Crop Planning',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Color(0xFF2E7D32),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        actions: [
+          // ADD THIS ACTION BUTTON:
+          Container(
+            margin: EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: Icon(Icons.language, size: 24),
+              onPressed: _showLanguageSelectionDialog,
+              tooltip: 'Select Language',
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        controller: _scrollController,
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeroSection(),
+              SizedBox(height: 24),
+
+              // Input forms
+              _buildInputCard([
+                _buildDropdownField(
+                    'Select Crop',
+                    _selectedCrop,
+                    _crops,
+                    (value) => setState(() => _selectedCrop = value!),
+                    Icons.eco),
+                SizedBox(height: 20),
+                _buildTextFormField('Farm Location', _locationController,
+                    'Enter your farm location (city, state)', Icons.location_on,
+                    validator: (value) => value?.isEmpty == true
+                        ? 'Please enter your farm location'
+                        : null),
+              ]),
+
+              SizedBox(height: 16),
+
+              _buildInputCard([
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    if (constraints.maxWidth < 400) {
+                      return Column(
+                        children: [
+                          _buildDropdownField(
+                              'Soil Type',
+                              _soilType,
+                              _soilTypes,
+                              (value) => setState(() => _soilType = value!),
+                              Icons.landscape),
+                          SizedBox(height: 16),
+                          _buildDropdownField(
+                              'Season',
+                              _season,
+                              _seasons,
+                              (value) => setState(() => _season = value!),
+                              Icons.calendar_today),
+                        ],
+                      );
+                    } else {
+                      return Row(
+                        children: [
+                          Expanded(
+                              child: _buildDropdownField(
+                                  'Soil Type',
+                                  _soilType,
+                                  _soilTypes,
+                                  (value) => setState(() => _soilType = value!),
+                                  Icons.landscape)),
+                          SizedBox(width: 16),
+                          Expanded(
+                              child: _buildDropdownField(
+                                  'Season',
+                                  _season,
+                                  _seasons,
+                                  (value) => setState(() => _season = value!),
+                                  Icons.calendar_today)),
+                        ],
+                      );
+                    }
+                  },
+                ),
+                SizedBox(height: 20),
+                _buildTextFormField('Farm Size', _farmSizeController,
+                    'Enter area in acres', Icons.square_foot,
+                    keyboardType: TextInputType.number,
+                    validator: (value) => value?.isEmpty == true
+                        ? 'Please enter farm size'
+                        : double.tryParse(value!) == null
+                            ? 'Please enter a valid number'
+                            : null),
+              ]),
+
+              SizedBox(height: 16),
+
+              _buildInputCard([
+                _buildTextFormField(
+                    'Additional Notes',
+                    _additionalNotesController,
+                    'Any specific requirements, local conditions, or concerns',
+                    Icons.notes,
+                    maxLines: 3),
+              ]),
+
+              SizedBox(height: 24),
+
+              // Generate button
+              Container(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _generateCropPlan,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF4CAF50),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                    disabledBackgroundColor: Colors.grey[300],
+                  ),
+                  child: _isLoading
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2)),
+                            SizedBox(width: 12),
+                            Text('Generating Your Plan...',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.w600)),
+                          ],
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.auto_awesome, size: 24),
+                            SizedBox(width: 12),
+                            Text('Generate Crop Plan',
+                                style: TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                ),
+              ),
+
+              SizedBox(height: 32),
+
+              // Results section
+              if (_result.isNotEmpty)
+                AnimatedBuilder(
+                  animation: _fadeAnimation,
+                  builder: (context, child) {
+                    return Opacity(
+                      opacity: _fadeAnimation.value,
+                      child: Transform.translate(
+                        offset: Offset(0, 20 * (1 - _fadeAnimation.value)),
+                        child: Column(
+                          children: [
+                            SizedBox(height: 20),
+                            _buildQuickStats(),
+                            SizedBox(height: 24),
+                            _buildMarkdownContent(),
+                            SizedBox(height: 24),
+                            _buildActionButtons(),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
