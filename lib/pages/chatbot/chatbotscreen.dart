@@ -12,6 +12,7 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:farmprecise/pages/homepage.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
+
 class FarmingChatbot extends StatefulWidget {
   const FarmingChatbot({Key? key}) : super(key: key);
 
@@ -679,9 +680,12 @@ Keep response under 500 words.
 
     await _processWithGemini(message);
   }
+  
 
   Future<void> _processWithGemini(String text) async {
   try {
+     final DateTime now = DateTime.now();
+    final String currentDate = "${now.day}/${now.month}/${now.year}";
     final String enhancedPrompt = '''
 You are AgriSense AI, a professional agricultural assistant specializing in modern farming solutions. Provide accurate, practical, and science-based advice for farmers.
 
@@ -699,7 +703,7 @@ Response Guidelines:
 2. Use professional agricultural terminology that should be easily understood by farmers
 3. Include specific recommendations when applicable
 4. For MARKET PRICE queries specifically:
-   - Always provide current date context (As of [current date])
+   - Always provide current date context (As of $currentDate)
    - Include both wholesale and retail prices when available
    - Mention specific market locations (Uzhavar Sandhai, wholesale markets)
    - Provide grade-wise pricing (Grade A, Grade B, Grade C)

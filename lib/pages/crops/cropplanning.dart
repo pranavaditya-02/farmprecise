@@ -4,16 +4,23 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as markdown;
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 import 'dart:math' as math;
 
 class CropPlanningScreen extends StatefulWidget {
-  final String? selectedCropName; // Add this parameter
+  final String? selectedCropName;
 
   const CropPlanningScreen({Key? key, this.selectedCropName}) : super(key: key);
+
   @override
   _CropPlanningScreenState createState() => _CropPlanningScreenState();
 }
+
 
 class TableBuilder extends MarkdownElementBuilder {
   final BuildContext context;
@@ -384,6 +391,7 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
   final _cropController = TextEditingController();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+   String _selectedCropName = '';
   String _selectedLanguage = 'en-IN';
   final Map<String, String> _languages = {
     'en-IN': 'English (India)',
@@ -428,22 +436,29 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
 
   String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
 
- @override
-void initState() {
-  super.initState();
-  _animationController = AnimationController(
-    duration: Duration(milliseconds: 800),
-    vsync: this,
-  );
-  _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-    CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-  );
-  
-  // Initialize crop controller with the passed crop name if available
-  if (widget.selectedCropName != null && widget.selectedCropName!.isNotEmpty) {
-    _cropController.text = widget.selectedCropName!;
+@override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    
+    // Store the passed crop name in local state and initialize the controller
+    if (widget.selectedCropName != null && widget.selectedCropName!.isNotEmpty) {
+      _selectedCropName = widget.selectedCropName!;
+      _cropController.text = _selectedCropName;
+    }
   }
-}
+    void updateCropName(String cropName) {
+    setState(() {
+      _selectedCropName = cropName;
+      _cropController.text = cropName;
+    });
+  }
 
   @override
   void dispose() {
@@ -560,6 +575,104 @@ void initState() {
       ],
     );
   }
+  Future<void> _exportToPdf() async {
+  if (_result.isEmpty) {
+    _showSnackBar('Please generate a crop plan first');
+    return;
+  }
+
+  try {
+    _showSnackBar('Generating PDF...');
+    
+    final pdf = pw.Document();
+    String cleanContent = _result
+        .replaceAll(RegExp(r'#{1,6}\s*'), '')
+        .replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1')
+        .replaceAll(RegExp(r'\*(.*?)\*'), r'$1');
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return [
+            pw.Text(
+              'Crop Planning Report',
+              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Text('Crop: ${_cropController.text}'),
+            pw.Text('Location: ${_locationController.text}'),
+            pw.Text('Farm Size: ${_farmSizeController.text} acres'),
+            pw.Text('Soil Type: $_soilType'),
+            pw.Text('Season: $_detectedSeason'),
+            pw.SizedBox(height: 20),
+            pw.Text(cleanContent, style: pw.TextStyle(fontSize: 12)),
+          ];
+        },
+      ),
+    );
+
+    final directory = await getTemporaryDirectory();
+    final file = File('${directory.path}/crop_plan.pdf');
+    await file.writeAsBytes(await pdf.save());
+    
+    _showSnackBar('PDF exported successfully');
+  } catch (e) {
+    _showSnackBar('Error exporting PDF: ${e.toString()}');
+  }
+}
+
+Future<void> _sharePdf() async {
+  if (_result.isEmpty) {
+    _showSnackBar('Please generate a crop plan first');
+    return;
+  }
+
+  try {
+    _showSnackBar('Preparing to share...');
+    
+    final pdf = pw.Document();
+    String cleanContent = _result
+        .replaceAll(RegExp(r'#{1,6}\s*'), '')
+        .replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1')
+        .replaceAll(RegExp(r'\*(.*?)\*'), r'$1');
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return [
+            pw.Text(
+              'Crop Planning Report',
+              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Text('Crop: ${_cropController.text}'),
+            pw.Text('Location: ${_locationController.text}'),
+            pw.Text('Farm Size: ${_farmSizeController.text} acres'),
+            pw.Text('Soil Type: $_soilType'),
+            pw.Text('Season: $_detectedSeason'),
+            pw.SizedBox(height: 20),
+            pw.Text(cleanContent, style: pw.TextStyle(fontSize: 12)),
+          ];
+        },
+      ),
+    );
+
+    final directory = await getTemporaryDirectory();
+    final file = File('${directory.path}/crop_plan.pdf');
+    await file.writeAsBytes(await pdf.save());
+    
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: 'Crop Planning Report for ${_cropController.text}',
+    );
+  } catch (e) {
+    _showSnackBar('Error sharing PDF: ${e.toString()}');
+  }
+}
 
   Widget _buildStatCard(String title, String value, IconData icon) {
     return Container(
@@ -742,7 +855,7 @@ void initState() {
             }
           ],
           'generationConfig': {
-            'temperature': 0.7,
+            'temperature': 0.3,
             'maxOutputTokens': 2048,
             'topP': 0.9,
             'topK': 40
