@@ -9,19 +9,28 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
-
 import 'dart:math' as math;
-
+class PDFSection {
+  final String type; // 'header', 'paragraph', 'table', 'list'
+  final String content;
+  final int level; // for headers (1-6)
+  final List<List<String>>? tableData; // for tables
+  final bool isHeader; // for table headers
+  
+  PDFSection({
+    required this.type,
+    required this.content,
+    this.level = 0,
+    this.tableData,
+    this.isHeader = false,
+  });
+}
 class CropPlanningScreen extends StatefulWidget {
   final String? selectedCropName;
-
   const CropPlanningScreen({Key? key, this.selectedCropName}) : super(key: key);
-
   @override
   _CropPlanningScreenState createState() => _CropPlanningScreenState();
 }
-
-
 class TableBuilder extends MarkdownElementBuilder {
   final BuildContext context;
 
@@ -101,7 +110,6 @@ class TableBuilder extends MarkdownElementBuilder {
       ),
     );
   }
-
   double _calculateTableHeight(markdown.Element element) {
     int rowCount = 0;
 
@@ -142,15 +150,11 @@ class TableBuilder extends MarkdownElementBuilder {
       }
     }
 
-    // Minimum 180px per column for better readability
     double screenWidth = MediaQuery.of(context).size.width;
     double calculatedWidth = maxColumns * 180.0;
 
-    // Ensure table is at least 1.2x screen width for proper scrolling
     return math.max(calculatedWidth, screenWidth * 1.2);
   }
-
-  // Fix for the _buildEnhancedTable method in your CropPlanningScreen
 
   Widget _buildEnhancedTable(markdown.Element element) {
     List<List<String>> tableData = [];
@@ -414,8 +418,6 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
     DateTime now = DateTime.now();
     int month = now.month;
 
-    // Basic season detection based on Indian agricultural calendar
-    // This can be enhanced with more sophisticated location-based logic
     if (month >= 6 && month <= 10) {
       return 'Kharif'; // Monsoon season crops (June-October)
     } else if (month >= 11 || month <= 3) {
@@ -447,7 +449,6 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     
-    // Store the passed crop name in local state and initialize the controller
     if (widget.selectedCropName != null && widget.selectedCropName!.isNotEmpty) {
       _selectedCropName = widget.selectedCropName!;
       _cropController.text = _selectedCropName;
@@ -546,19 +547,6 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
     );
   }
 
-  String _cleanTextForTts(String text) {
-    return text
-        .replaceAll(RegExp(r'#{1,6}\s*'), '')
-        .replaceAll(RegExp(r'\*{1,2}([^*]+)\*{1,2}'), r'$1')
-        .replaceAll(RegExp(r'`([^`]+)`'), r'$1')
-        .replaceAll(RegExp(r'[_~\[\](){}|]'), '')
-        .replaceAll(RegExp(r'[🌱🦠📊🧪🌍📈💡📸🖼️📄]'), '')
-        .replaceAll(RegExp(r'[•\-]\s*'), 'Point: ')
-        .replaceAll(RegExp(r'\n\s*\n'), '. ')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-  }
-
   Widget _buildQuickStats() {
     return Row(
       children: [
@@ -575,7 +563,9 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
       ],
     );
   }
-  Future<void> _exportToPdf() async {
+  // Replace the existing _exportToPdf and _sharePdf methods with these fixed versions
+
+Future<void> _exportToPdf() async {
   if (_result.isEmpty) {
     _showSnackBar('Please generate a crop plan first');
     return;
@@ -585,41 +575,25 @@ class _CropPlanningScreenState extends State<CropPlanningScreen>
     _showSnackBar('Generating PDF...');
     
     final pdf = pw.Document();
-    String cleanContent = _result
-        .replaceAll(RegExp(r'#{1,6}\s*'), '')
-        .replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1')
-        .replaceAll(RegExp(r'\*(.*?)\*'), r'$1');
+    
+    // Parse the markdown content to preserve structure
+    List<PDFSection> sections = _parseMarkdownContent(_result);
+    
+    // Add pages with proper formatting
+    await _addPDFPages(pdf, sections);
 
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: pw.EdgeInsets.all(32),
-        build: (pw.Context context) {
-          return [
-            pw.Text(
-              'Crop Planning Report',
-              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
-            ),
-            pw.SizedBox(height: 20),
-            pw.Text('Crop: ${_cropController.text}'),
-            pw.Text('Location: ${_locationController.text}'),
-            pw.Text('Farm Size: ${_farmSizeController.text} acres'),
-            pw.Text('Soil Type: $_soilType'),
-            pw.Text('Season: $_detectedSeason'),
-            pw.SizedBox(height: 20),
-            pw.Text(cleanContent, style: pw.TextStyle(fontSize: 12)),
-          ];
-        },
-      ),
-    );
-
-    final directory = await getTemporaryDirectory();
-    final file = File('${directory.path}/crop_plan.pdf');
+    final directory = await getApplicationDocumentsDirectory();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final fileName = 'crop_plan_${_cropController.text.replaceAll(' ', '_')}_$timestamp.pdf';
+    final file = File('${directory.path}/$fileName');
+    
     await file.writeAsBytes(await pdf.save());
     
-    _showSnackBar('PDF exported successfully');
+    _showSnackBar('PDF saved to Documents folder: $fileName');
+    
   } catch (e) {
     _showSnackBar('Error exporting PDF: ${e.toString()}');
+    print('PDF Export Error: $e');
   }
 }
 
@@ -630,47 +604,513 @@ Future<void> _sharePdf() async {
   }
 
   try {
-    _showSnackBar('Preparing to share...');
+    _showSnackBar('Preparing PDF for sharing...');
     
     final pdf = pw.Document();
-    String cleanContent = _result
-        .replaceAll(RegExp(r'#{1,6}\s*'), '')
-        .replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1')
-        .replaceAll(RegExp(r'\*(.*?)\*'), r'$1');
-
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: pw.EdgeInsets.all(32),
-        build: (pw.Context context) {
-          return [
-            pw.Text(
-              'Crop Planning Report',
-              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
-            ),
-            pw.SizedBox(height: 20),
-            pw.Text('Crop: ${_cropController.text}'),
-            pw.Text('Location: ${_locationController.text}'),
-            pw.Text('Farm Size: ${_farmSizeController.text} acres'),
-            pw.Text('Soil Type: $_soilType'),
-            pw.Text('Season: $_detectedSeason'),
-            pw.SizedBox(height: 20),
-            pw.Text(cleanContent, style: pw.TextStyle(fontSize: 12)),
-          ];
-        },
-      ),
-    );
+    
+    // Parse the markdown content to preserve structure
+    List<PDFSection> sections = _parseMarkdownContent(_result);
+    
+    // Add pages with proper formatting
+    await _addPDFPages(pdf, sections);
 
     final directory = await getTemporaryDirectory();
-    final file = File('${directory.path}/crop_plan.pdf');
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final fileName = 'crop_plan_${_cropController.text.replaceAll(' ', '_')}_$timestamp.pdf';
+    final file = File('${directory.path}/$fileName');
+    
     await file.writeAsBytes(await pdf.save());
     
     await Share.shareXFiles(
       [XFile(file.path)],
-      text: 'Crop Planning Report for ${_cropController.text}',
+      text: 'Smart Crop Planning Report for ${_cropController.text}\n\nLocation: ${_locationController.text}\nFarm Size: ${_farmSizeController.text} acres\nSoil Type: $_soilType\nSeason: $_detectedSeason',
+      subject: 'Crop Planning Report - ${_cropController.text}',
     );
+    
+    _showSnackBar('PDF shared successfully!');
+    
   } catch (e) {
     _showSnackBar('Error sharing PDF: ${e.toString()}');
+    print('PDF Share Error: $e');
+  }
+}
+
+
+
+// Enhanced markdown parser that preserves structure
+List<PDFSection> _parseMarkdownContent(String markdown) {
+  List<PDFSection> sections = [];
+  List<String> lines = markdown.split('\n');
+  
+  for (int i = 0; i < lines.length; i++) {
+    String line = lines[i].trim();
+    
+    if (line.isEmpty) continue;
+    
+    // Parse headers
+    if (line.startsWith('#')) {
+      int level = 0;
+      while (level < line.length && line[level] == '#') {
+        level++;
+      }
+      String headerText = line.substring(level).trim();
+      sections.add(PDFSection(
+        type: 'header',
+        content: headerText,
+        level: level,
+      ));
+    }
+    // Parse tables
+    else if (line.contains('|') && line.split('|').length > 2) {
+      List<List<String>> tableData = [];
+      bool isFirstRow = true;
+      
+      // Parse current table
+      while (i < lines.length && lines[i].trim().contains('|')) {
+        String tableLine = lines[i].trim();
+        
+        // Skip separator lines like |---|---|
+        if (tableLine.contains('---')) {
+          i++;
+          continue;
+        }
+        
+        List<String> cells = tableLine.split('|')
+            .map((cell) => cell.trim())
+            .where((cell) => cell.isNotEmpty)
+            .toList();
+            
+        if (cells.isNotEmpty) {
+          tableData.add(cells);
+        }
+        i++;
+      }
+      i--; // Adjust for the outer loop increment
+      
+      if (tableData.isNotEmpty) {
+        sections.add(PDFSection(
+          type: 'table',
+          content: '',
+          tableData: tableData,
+          isHeader: true,
+        ));
+      }
+    }
+    // Parse lists
+    else if (line.startsWith('- ') || line.startsWith('* ') || RegExp(r'^\d+\.').hasMatch(line)) {
+      String listContent = line;
+      // Collect multiple list items
+      while (i + 1 < lines.length && 
+             (lines[i + 1].trim().startsWith('- ') || 
+              lines[i + 1].trim().startsWith('* ') ||
+              RegExp(r'^\d+\.').hasMatch(lines[i + 1].trim()))) {
+        i++;
+        listContent += '\n' + lines[i].trim();
+      }
+      
+      sections.add(PDFSection(
+        type: 'list',
+        content: listContent,
+      ));
+    }
+    // Regular paragraphs
+    else {
+      String paragraph = line;
+      // Collect multiple lines that belong to the same paragraph
+      while (i + 1 < lines.length && 
+             lines[i + 1].trim().isNotEmpty && 
+             !lines[i + 1].trim().startsWith('#') &&
+             !lines[i + 1].trim().contains('|') &&
+             !lines[i + 1].trim().startsWith('- ') &&
+             !lines[i + 1].trim().startsWith('* ') &&
+             !RegExp(r'^\d+\.').hasMatch(lines[i + 1].trim())) {
+        i++;
+        paragraph += ' ' + lines[i].trim();
+      }
+      
+      if (paragraph.isNotEmpty) {
+        sections.add(PDFSection(
+          type: 'paragraph',
+          content: _cleanTextForPDF(paragraph),
+        ));
+      }
+    }
+  }
+  
+  return sections;
+}
+
+// Clean text while preserving formatting indicators
+String _cleanTextForPDF(String text) {
+  return text
+      // Clean up bold/italic markers but keep the text
+      .replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1')
+      .replaceAll(RegExp(r'\*(.*?)\*'), r'$1')
+      // Remove code blocks
+      .replaceAll(RegExp(r'```[\s\S]*?```'), '')
+      .replaceAll(RegExp(r'`([^`]+)`'), r'$1')
+      // Remove problematic characters
+      .replaceAll(RegExp(r'[🌱🦠📊🧪🌍📈💡📸🖼️📄🔍🎯⚡✅❌⭐🚀🌾🔬📱💻🎨🏆]'), '')
+      .trim();
+}
+
+// Add pages with proper formatting
+Future<void> _addPDFPages(pw.Document pdf, List<PDFSection> sections) async {
+  double currentPageHeight = 0;
+  const double pageHeight = 700; // Usable page height
+  const double marginTop = 50;
+  const double marginBottom = 50;
+  
+  List<pw.Widget> currentPageContent = [];
+  
+  // Add first page with header
+  currentPageContent.add(_buildPDFHeader());
+  currentPageContent.add(pw.SizedBox(height: 20));
+  currentPageContent.add(_buildFarmDetailsSection());
+  currentPageContent.add(pw.SizedBox(height: 20));
+  
+  currentPageHeight = 200; // Estimate for header and farm details
+  
+  for (PDFSection section in sections) {
+    pw.Widget? sectionWidget = _buildPDFSection(section);
+    if (sectionWidget == null) continue;
+    
+    double sectionHeight = _estimateSectionHeight(section);
+    
+    // Check if we need a new page
+    if (currentPageHeight + sectionHeight > pageHeight) {
+      // Add current page
+      pdf.addPage(_buildPDFPage(currentPageContent, false));
+      
+      // Start new page
+      currentPageContent = [];
+      currentPageHeight = 0;
+    }
+    
+    currentPageContent.add(sectionWidget);
+    currentPageContent.add(pw.SizedBox(height: 10));
+    currentPageHeight += sectionHeight + 10;
+  }
+  
+  // Add the last page
+  if (currentPageContent.isNotEmpty) {
+    pdf.addPage(_buildPDFPage(currentPageContent, true));
+  }
+}
+
+// Build individual PDF sections
+pw.Widget? _buildPDFSection(PDFSection section) {
+  switch (section.type) {
+    case 'header':
+      return _buildPDFHeaderSection(section);
+    case 'table':
+      return _buildPDFTable(section);
+    case 'list':
+      return _buildPDFList(section);
+    case 'paragraph':
+      return _buildPDFParagraph(section);
+    default:
+      return null;
+  }
+}
+
+// Build PDF header section
+pw.Widget _buildPDFHeaderSection(PDFSection section) {
+  double fontSize = 16 - (section.level * 2);
+  fontSize = fontSize < 10 ? 10 : fontSize;
+  
+  return pw.Container(
+    margin: pw.EdgeInsets.only(top: section.level == 1 ? 15 : 10, bottom: 5),
+    child: pw.Text(
+      section.content,
+      style: pw.TextStyle(
+        fontSize: fontSize,
+        fontWeight: pw.FontWeight.bold,
+        color: section.level <= 2 ? PdfColors.green800 : PdfColors.green600,
+      ),
+    ),
+  );
+}
+
+// Build PDF table with proper formatting
+pw.Widget _buildPDFTable(PDFSection section) {
+  if (section.tableData == null || section.tableData!.isEmpty) {
+    return pw.Container();
+  }
+
+  List<List<String>> tableData = section.tableData!;
+  
+  // Ensure all rows have the same number of columns
+  int maxColumns = tableData.fold<int>(0, (max, row) => row.length > max ? row.length : max);
+  for (var row in tableData) {
+    while (row.length < maxColumns) {
+      row.add('');
+    }
+  }
+
+  return pw.Container(
+    margin: pw.EdgeInsets.symmetric(vertical: 10),
+    decoration: pw.BoxDecoration(
+      border: pw.Border.all(color: PdfColors.green200),
+      borderRadius: pw.BorderRadius.circular(5),
+    ),
+    child: pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+      columnWidths: {
+        for (int i = 0; i < maxColumns; i++)
+          i: pw.FlexColumnWidth(1.0),
+      },
+      children: [
+        // Header row (if exists)
+        if (tableData.isNotEmpty)
+          pw.TableRow(
+            decoration: pw.BoxDecoration(
+              color: PdfColors.green50,
+            ),
+            children: tableData.first.map((cell) => pw.Container(
+              padding: pw.EdgeInsets.all(8),
+              child: pw.Text(
+                cell,
+                style: pw.TextStyle(
+                  fontSize: 9,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.green800,
+                ),
+                textAlign: pw.TextAlign.center,
+              ),
+            )).toList(),
+          ),
+        // Data rows
+        ...tableData.skip(1).map((row) => pw.TableRow(
+          children: row.map((cell) => pw.Container(
+            padding: pw.EdgeInsets.all(8),
+            child: pw.Text(
+              cell.isEmpty ? '-' : cell,
+              style: pw.TextStyle(
+                fontSize: 8,
+                color: cell.isEmpty ? PdfColors.grey500 : PdfColors.black,
+              ),
+              textAlign: pw.TextAlign.left,
+            ),
+          )).toList(),
+        )).toList(),
+      ],
+    ),
+  );
+}
+
+// Build PDF list
+pw.Widget _buildPDFList(PDFSection section) {
+  List<String> listItems = section.content.split('\n');
+  
+  return pw.Container(
+    margin: pw.EdgeInsets.symmetric(vertical: 5),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: listItems.map((item) {
+        String cleanItem = item.replaceAll(RegExp(r'^[-*]\s*'), '').replaceAll(RegExp(r'^\d+\.\s*'), '');
+        if (cleanItem.isEmpty) return pw.Container();
+        
+        return pw.Container(
+          margin: pw.EdgeInsets.only(bottom: 3),
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Container(
+                width: 15,
+                child: pw.Text('•', style: pw.TextStyle(fontSize: 10, color: PdfColors.green600)),
+              ),
+              pw.Expanded(
+                child: pw.Text(
+                  cleanItem,
+                  style: pw.TextStyle(fontSize: 9, height: 1.3),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    ),
+  );
+}
+
+// Build PDF paragraph
+pw.Widget _buildPDFParagraph(PDFSection section) {
+  return pw.Container(
+    margin: pw.EdgeInsets.symmetric(vertical: 5),
+    child: pw.Text(
+      section.content,
+      style: pw.TextStyle(fontSize: 9, height: 1.4),
+      textAlign: pw.TextAlign.justify,
+    ),
+  );
+}
+
+// Build PDF page
+pw.Page _buildPDFPage(List<pw.Widget> content, bool isLastPage) {
+  return pw.Page(
+    pageFormat: PdfPageFormat.a4,
+    margin: pw.EdgeInsets.all(20),
+    build: (pw.Context context) {
+      return pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          // Content
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: content,
+            ),
+          ),
+          
+          // Footer
+          pw.Container(
+            padding: pw.EdgeInsets.only(top: 10),
+            decoration: pw.BoxDecoration(
+              border: pw.Border(
+                top: pw.BorderSide(color: PdfColors.grey300),
+              ),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'Smart Crop Planning AI Report',
+                  style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                ),
+                pw.Text(
+                  'Page ${context.pageNumber} of ${context.pagesCount}',
+                  style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+// Build PDF header
+pw.Widget _buildPDFHeader() {
+  return pw.Container(
+    padding: pw.EdgeInsets.only(bottom: 15),
+    decoration: pw.BoxDecoration(
+      border: pw.Border(
+        bottom: pw.BorderSide(color: PdfColors.green, width: 2),
+      ),
+    ),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'Smart Crop Planning Report',
+          style: pw.TextStyle(
+            fontSize: 20,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.green800,
+          ),
+        ),
+        pw.SizedBox(height: 8),
+        pw.Text(
+          'Generated on ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+          style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+        ),
+      ],
+    ),
+  );
+}
+
+// Build farm details section
+pw.Widget _buildFarmDetailsSection() {
+  return pw.Container(
+    padding: pw.EdgeInsets.all(12),
+    decoration: pw.BoxDecoration(
+      color: PdfColors.green50,
+      borderRadius: pw.BorderRadius.circular(6),
+    ),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'Farm Details',
+          style: pw.TextStyle(
+            fontSize: 14,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.green800,
+          ),
+        ),
+        pw.SizedBox(height: 8),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('Crop: ${_cropController.text}', 
+                      style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                  pw.SizedBox(height: 3),
+                  pw.Text('Location: ${_locationController.text}', 
+                      style: pw.TextStyle(fontSize: 10)),
+                  pw.SizedBox(height: 3),
+                  pw.Text('Farm Size: ${_farmSizeController.text} acres', 
+                      style: pw.TextStyle(fontSize: 10)),
+                ],
+              ),
+            ),
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('Soil Type: $_soilType', 
+                      style: pw.TextStyle(fontSize: 10)),
+                  pw.SizedBox(height: 3),
+                  pw.Text('Season: $_detectedSeason', 
+                      style: pw.TextStyle(fontSize: 10)),
+                  pw.SizedBox(height: 3),
+                  pw.Text('Language: ${_languages[_selectedLanguage]}', 
+                      style: pw.TextStyle(fontSize: 10)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        
+        // Additional Notes (if any)
+        if (_additionalNotesController.text.isNotEmpty) ...[
+          pw.SizedBox(height: 10),
+          pw.Text(
+            'Additional Notes:',
+            style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 3),
+          pw.Text(
+            _additionalNotesController.text,
+            style: pw.TextStyle(fontSize: 9, fontStyle: pw.FontStyle.italic),
+          ),
+        ],
+      ],
+    ),
+  );
+}
+
+// Estimate section height for pagination
+double _estimateSectionHeight(PDFSection section) {
+  switch (section.type) {
+    case 'header':
+      return 25 + (section.level == 1 ? 15 : 10);
+    case 'table':
+      if (section.tableData == null) return 0;
+      return (section.tableData!.length * 25) + 20; // Estimate row height
+    case 'list':
+      int items = section.content.split('\n').length;
+      return items * 15 + 10;
+    case 'paragraph':
+      int lines = (section.content.length / 80).ceil(); // Estimate chars per line
+      return lines * 12 + 10;
+    default:
+      return 20;
   }
 }
 
@@ -761,73 +1201,72 @@ Future<void> _sharePdf() async {
     );
   }
 
-  Widget _buildActionButtons() {
-    return Container(
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: Offset(0, 2))
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () =>
-                      _showSnackBar('Export functionality will be implemented'),
-                  icon: Icon(Icons.download, size: 20),
-                  label: Text('Export Plan'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF4CAF50),
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
-                  ),
+ Widget _buildActionButtons() {
+  return Container(
+    padding: EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2))
+      ],
+    ),
+    child: Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _exportToPdf, // Updated this line
+                icon: Icon(Icons.download, size: 20),
+                label: Text('Export PDF'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF4CAF50),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
                 ),
               ),
-              SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () =>
-                      _showSnackBar('Share functionality will be implemented'),
-                  icon: Icon(Icons.share, size: 20),
-                  label: Text('Share Plan'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Color(0xFF4CAF50),
-                    side: BorderSide(color: Color(0xFF4CAF50)),
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _sharePdf, // Updated this line
+                icon: Icon(Icons.share, size: 20),
+                label: Text('Share PDF'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Color(0xFF4CAF50),
+                  side: BorderSide(color: Color(0xFF4CAF50)),
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
               ),
-            ],
-          ),
-          SizedBox(height: 12),
-          TextButton.icon(
-            onPressed: () => setState(() {
-              _result = '';
-              _animationController.reset();
-            }),
-            icon: Icon(Icons.refresh, size: 20),
-            label: Text('Generate New Plan'),
-            style: TextButton.styleFrom(
-                foregroundColor: Color(0xFF4CAF50),
-                padding: EdgeInsets.symmetric(vertical: 12)),
-          ),
-        ],
-      ),
-    );
-  }
+            ),
+          ],
+        ),
+        SizedBox(height: 12),
+        TextButton.icon(
+          onPressed: () => setState(() {
+            _result = '';
+            _animationController.reset();
+          }),
+          icon: Icon(Icons.refresh, size: 20),
+          label: Text('Generate New Plan'),
+          style: TextButton.styleFrom(
+              foregroundColor: Color(0xFF4CAF50),
+              padding: EdgeInsets.symmetric(vertical: 12)),
+        ),
+      ],
+    ),
+  );
+}
+
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1026,7 +1465,7 @@ Future<void> _sharePdf() async {
       appBar: AppBar(
         title: Text('Smart Crop Planning',
             style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Color(0xFF2E7D32),
+        backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -1037,8 +1476,7 @@ Future<void> _sharePdf() async {
               setState(() {
                 _selectedLanguage = value;
               });
-              // Optional: Add any initialization function if needed
-              // _initializeTts(); // Add this if you have TTS functionality
+          
             },
             itemBuilder: (BuildContext context) {
               return _languages.entries.map((entry) {

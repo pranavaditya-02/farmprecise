@@ -80,7 +80,7 @@ class CustomDrawer extends StatelessWidget {
             ),
 
             ListTile(
-              leading: Icon(Icons.people, color: Colors.green),
+              leading: Icon(Icons.groups, color: Colors.green),
               title: Text('Community'),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
@@ -91,21 +91,19 @@ class CustomDrawer extends StatelessWidget {
                 );
               },
             ),
-
-            // Rent Products Screen Navigation
             ListTile(
-              leading: Icon(Icons.shopping_bag, color: Colors.green),
-              title: Text('Rent Products'),
+              leading: Icon(Icons.trending_up, color: Colors.green), // or Icons.attach_money
+              title: Text('Market Prices'),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
 
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => RentProductsForm()),
+                  MaterialPageRoute(
+                      builder: (context) => MandiPricesScreen()),
                 );
               },
             ),
-            // Crop Calendar Screen Navigation
             ListTile(
               leading: Icon(Icons.calendar_today, color: Colors.green),
               title: Text('Crop Suggestions'),
@@ -120,20 +118,7 @@ class CustomDrawer extends StatelessWidget {
               },
             ),
               ListTile(
-              leading: Icon(Icons.currency_rupee, color: Colors.green), // or Icons.attach_money
-              title: Text('Market Prices'),
-              onTap: () {
-                Navigator.pop(context); // Close the drawer
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => MandiPricesScreen()),
-                );
-              },
-            ),
-              ListTile(
-              leading: Icon(Icons.currency_rupee, color: Colors.green), // or Icons.attach_money
+              leading: Icon(Icons.assignment, color: Colors.green), // or Icons.attach_money
               title: Text('Crop planning'),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
@@ -145,8 +130,20 @@ class CustomDrawer extends StatelessWidget {
                 );
               },
             ),
+             ListTile(
+              leading: Icon(Icons.shopping_bag, color: Colors.green),
+              title: Text('Rent Products'),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => RentProductsForm()),
+                );
+              },
+            ),
               ListTile(
-              leading: Icon(Icons.chat, color: Colors.green), // or Icons.attach_money
+              leading: Icon(Icons.smart_toy, color: Colors.green), // or Icons.attach_money
               title: Text('Chat Bot'),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
@@ -158,9 +155,13 @@ class CustomDrawer extends StatelessWidget {
                 );
               },
             ),
+            // Rent Products Screen Navigation
+           
+
+            
 
             ListTile(
-              leading: Icon(Icons.airline_stops, color: Colors.green),
+              leading: Icon(Icons.flight, color: Colors.green),
               title: Text('Drone Data'),
               onTap: () {
                 Navigator.pop(context); // Close the drawer

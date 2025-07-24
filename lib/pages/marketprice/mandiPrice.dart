@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MandiPricesScreen extends StatefulWidget {
   @override
@@ -26,10 +27,78 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
   TextEditingController searchController = TextEditingController();
   int totalRecords = 0;
 
+  // Cache configuration
+  static const String CACHE_KEY = 'mandi_prices_cache';
+  static const String CACHE_TIMESTAMP_KEY = 'mandi_prices_timestamp';
+  static const Duration CACHE_DURATION = Duration(hours: 12); // Cache for 12 hours
+
   @override
   void initState() {
     super.initState();
-    fetchMandiPrices();
+    loadMandiPrices();
+  }
+
+  Future<void> loadMandiPrices({bool forceRefresh = false}) async {
+    if (!forceRefresh) {
+      // Try to load from cache first
+      final cachedData = await loadFromCache();
+      if (cachedData != null) {
+        setState(() {
+          mandiPrices = cachedData;
+          filteredPrices = cachedData;
+          isLoading = false;
+          totalRecords = cachedData.length;
+          
+          // Extract unique values for filters
+          districts = cachedData.map((p) => p.district).toSet();
+          markets = cachedData.map((p) => p.market).toSet();
+          commodities = cachedData.map((p) => p.commodity).toSet();
+        });
+        return;
+      }
+    }
+
+    // If no cached data or force refresh, fetch from API
+    await fetchMandiPrices();
+  }
+
+  Future<List<MandiPrice>?> loadFromCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedJson = prefs.getString(CACHE_KEY);
+      final timestampMs = prefs.getInt(CACHE_TIMESTAMP_KEY);
+      
+      if (cachedJson != null && timestampMs != null) {
+        final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestampMs);
+        final now = DateTime.now();
+        
+        // Check if cache is still valid
+        if (now.difference(cacheTime) < CACHE_DURATION) {
+          final List<dynamic> jsonList = json.decode(cachedJson);
+          final List<MandiPrice> cachedPrices = jsonList
+              .map((json) => MandiPrice.fromJson(json))
+              .toList();
+          
+          return cachedPrices;
+        }
+      }
+    } catch (e) {
+      print('Error loading from cache: $e');
+    }
+    return null;
+  }
+
+  Future<void> saveToCache(List<MandiPrice> prices) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonList = prices.map((price) => price.toJson()).toList();
+      final jsonString = json.encode(jsonList);
+      
+      await prefs.setString(CACHE_KEY, jsonString);
+      await prefs.setInt(CACHE_TIMESTAMP_KEY, DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      print('Error saving to cache: $e');
+    }
   }
 
   Future<void> fetchMandiPrices() async {
@@ -62,16 +131,19 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
 
         for (var record in data['records']) {
           final mandiPrice = MandiPrice.fromJson(record);
-          if (mandiPrice.state == 'Kerala') { 
+          if (mandiPrice.state == 'Tamil Nadu') { 
             prices.add(mandiPrice);
           }
         }
+
+        // Save to cache
+        await saveToCache(prices);
 
         setState(() {
           mandiPrices = prices;
           filteredPrices = prices;
           isLoading = false;
-          totalRecords = prices.length; // Now this is Tamil Nadu only
+          totalRecords = prices.length;
 
           // Extract unique values for filters (no state)
           districts = prices.map((p) => p.district).toSet();
@@ -104,6 +176,27 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
     });
   }
 
+  // Get markets based on selected district
+  List<String> getAvailableMarkets() {
+    if (selectedDistrict == null) {
+      return markets.toList();
+    }
+    return mandiPrices
+        .where((price) => price.district == selectedDistrict)
+        .map((price) => price.market)
+        .toSet()
+        .toList();
+  }
+
+  // Get commodities based on selected district and market
+  List<String> getAvailableCommodities() {
+    return mandiPrices.where((price) {
+      bool matchesDistrict = selectedDistrict == null || price.district == selectedDistrict;
+      bool matchesMarket = selectedMarket == null || price.market == selectedMarket;
+      return matchesDistrict && matchesMarket;
+    }).map((price) => price.commodity).toSet().toList();
+  }
+
   void clearFilters() {
     setState(() {
       selectedDistrict = null;
@@ -116,8 +209,6 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final uniqueMarkets = filteredPrices.map((e) => e.market).toSet().length;
-
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -139,10 +230,10 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
           Card(
             margin: EdgeInsets.all(12),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8), // Border radius 8
+              borderRadius: BorderRadius.circular(8),
               side: BorderSide(
-                color: Colors.green[100]!, // Border color
-                width: 1,                  // Border width 1
+                color: Colors.green[100]!,
+                width: 1,
               ),
             ),
             child: Padding(
@@ -190,7 +281,9 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
                           onSelected: (value) {
                             setState(() {
                               selectedDistrict = value;
+                              // Clear market and commodity when district changes
                               selectedMarket = null;
+                              selectedCommodity = null;
                             });
                             applyFilters();
                           },
@@ -200,10 +293,12 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
                           icon: Icons.store_mall_directory,
                           label: 'Market',
                           selectedValue: selectedMarket,
-                          options: markets.toList(),
+                          options: getAvailableMarkets(),
                           onSelected: (value) {
                             setState(() {
                               selectedMarket = value;
+                              // Clear commodity when market changes
+                              selectedCommodity = null;
                             });
                             applyFilters();
                           },
@@ -213,7 +308,7 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
                           icon: Icons.shopping_basket,
                           label: 'Commodity',
                           selectedValue: selectedCommodity,
-                          options: commodities.toList(),
+                          options: getAvailableCommodities(),
                           onSelected: (value) {
                             setState(() {
                               selectedCommodity = value;
@@ -240,57 +335,6 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
               ),
             ),
           ),
-
-          // Container(
-          //   width: double.infinity,
-          //   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          //   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          //   decoration: BoxDecoration(
-          //     color: Colors.green[50],
-          //     borderRadius: BorderRadius.circular(8), // Border radius 8
-          //     border: Border.all(
-          //       color: Colors.green[100]!, // Border color
-          //       width: 1,                  // Border width 1
-          //     ),
-          //   ),
-          //   child: Row(
-          //     children: [
-          //       Container(
-          //         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          //         decoration: BoxDecoration(
-          //           color: Colors.green[100],
-          //           borderRadius: BorderRadius.circular(8),
-          //         ),
-          //         child: Row(
-          //           children: [
-          //             Icon(Icons.location_on, color: Colors.green[700], size: 16),
-          //             SizedBox(width: 4),
-          //             Text(
-          //               'Tamil Nadu',
-          //               style: TextStyle(
-          //                 color: Colors.green[800],
-          //                 fontWeight: FontWeight.bold,
-          //                 fontSize: 13,
-          //               ),
-          //             ),
-          //           ],
-          //         ),
-          //       ),
-          //       SizedBox(width: 12),
-          //       Expanded(
-          //         child: Text(
-          //           '$uniqueMarkets markets found • ${filteredPrices.length} records',
-          //           style: TextStyle(
-          //             color: Colors.green[700],
-          //             fontWeight: FontWeight.w500,
-          //             fontSize: 14,
-          //           ),
-          //           overflow: TextOverflow.ellipsis,
-          //         ),
-          //       ),
-          //     ],
-          //   ),
-          // ),
           
           // Price List
           Expanded(
@@ -304,6 +348,13 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
                           size: 50,
                         ),
                         SizedBox(height: 16),
+                        Text(
+                          'Loading market prices...',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                          ),
+                        ),
                       ],
                     ),
                   )
@@ -419,12 +470,12 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
     
     return Card(
       margin: EdgeInsets.only(bottom: 12),
-      elevation: 0, // Remove elevation
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8), // Border radius 8
+        borderRadius: BorderRadius.circular(8),
         side: BorderSide(
-          color: Colors.green[100]!, // Border color
-          width: 1,                  // Border width 1
+          color: Colors.green[100]!,
+          width: 1,
         ),
       ),
       child: Padding(
@@ -576,12 +627,12 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
   }
 
   Widget _buildFilterChipWithIcon({
-  required IconData icon,
-  required String label,
-  required String? selectedValue,
-  required List<String> options,
-  required Function(String?) onSelected,
-}) {
+    required IconData icon,
+    required String label,
+    required String? selectedValue,
+    required List<String> options,
+    required Function(String?) onSelected,
+  }) {
     return FilterChip(
       avatar: Icon(icon, size: 18, color: selectedValue != null ? Colors.green[700] : Colors.grey[500]),
       label: Text(selectedValue ?? label),
@@ -639,5 +690,20 @@ class MandiPrice {
       maxPrice: double.tryParse(json['max_price'].toString()) ?? 0.0,
       modalPrice: double.tryParse(json['modal_price'].toString()) ?? 0.0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'state': state,
+      'district': district,
+      'market': market,
+      'commodity': commodity,
+      'variety': variety,
+      'grade': grade,
+      'arrival_date': arrivalDate,
+      'min_price': minPrice,
+      'max_price': maxPrice,
+      'modal_price': modalPrice,
+    };
   }
 }
