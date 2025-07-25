@@ -120,16 +120,16 @@ class _CommunityScreenState extends State<CommunityScreen> {
           setState(() {
             _posts = cachedPosts
                 .map((post) => PostItem(
-                      username: post['USERNAME'],
-                      date: post['DATE'],
-                      title: post['TITLE'],
-                      content: post['CONTENT'],
+                      username: post['USERNAME'] ?? '',
+                      date: post['DATE'] ?? '',
+                      title: post['TITLE'] ?? '',
+                      content: post['CONTENT'] ?? '',
                       commentsCount: post['commentsCount'] ?? 0,
                       likesCount: post['likesCount'] ?? 0,
                       isLiked: post['isLiked'] ?? false,
                       replies: (post['replies'] as List<dynamic>?)
-                          ?.map((reply) => Reply.fromJson(reply))
-                          .toList() ?? [],
+                          ?.map((reply) => Reply.fromJson(reply as Map<String, dynamic>))
+                          .toList() ?? <Reply>[],
                       onLike: _handleLike,
                       onReply: _handleReply,
                     ))
@@ -173,16 +173,16 @@ class _CommunityScreenState extends State<CommunityScreen> {
       final List<dynamic> postsJson = json.decode(response.body);
       final posts = postsJson
           .map((post) => PostItem(
-                username: post['USERNAME'],
-                date: post['DATE'],
-                title: post['TITLE'],
-                content: post['CONTENT'],
+                username: post['USERNAME'] ?? '',
+                date: post['DATE'] ?? '',
+                title: post['TITLE'] ?? '',
+                content: post['CONTENT'] ?? '',
                 commentsCount: post['commentsCount'] ?? 0,
                 likesCount: post['likesCount'] ?? 0,
                 isLiked: post['isLiked'] ?? false,
                 replies: (post['replies'] as List<dynamic>?)
-                    ?.map((reply) => Reply.fromJson(reply))
-                    .toList() ?? [],
+                    ?.map((reply) => Reply.fromJson(reply as Map<String, dynamic>))
+                    .toList() ?? <Reply>[],
                 onLike: _handleLike,
                 onReply: _handleReply,
               ))
@@ -212,16 +212,16 @@ class _CommunityScreenState extends State<CommunityScreen> {
     final List<dynamic> postsJson = jsonDecode(cachedPostsJson);
     return postsJson
         .map((post) => PostItem(
-              username: post['USERNAME'],
-              date: post['DATE'],
-              title: post['TITLE'],
-              content: post['CONTENT'],
+              username: post['USERNAME'] ?? '',
+              date: post['DATE'] ?? '',
+              title: post['TITLE'] ?? '',
+              content: post['CONTENT'] ?? '',
               commentsCount: post['commentsCount'] ?? 0,
               likesCount: post['likesCount'] ?? 0,
               isLiked: post['isLiked'] ?? false,
               replies: (post['replies'] as List<dynamic>?)
-                  ?.map((reply) => Reply.fromJson(reply))
-                  .toList() ?? [],
+                  ?.map((reply) => Reply.fromJson(reply as Map<String, dynamic>))
+                  .toList() ?? <Reply>[],
               onLike: _handleLike,
               onReply: _handleReply,
             ))
@@ -247,7 +247,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
         _filteredPosts = _posts;
       }
     });
-    _showSnackBar(post.isLiked ? 'Post unliked' : 'Post liked!');
   }
 
   void _handleReply(PostItem post) {
@@ -371,7 +370,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
         _filteredPosts = _posts;
       }
     });
-    _showSnackBar('Reply added successfully!');
   }
 
   void _searchPosts(String query) {
@@ -449,7 +447,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           'commentsCount': 0,
           'likesCount': 0,
           'isLiked': false,
-          'replies': [],
+          'replies': <Map<String, dynamic>>[],
         });
 
         // Clear search cache as data has changed
@@ -878,7 +876,7 @@ class Reply {
     return Reply(
       username: json['username'] ?? '',
       content: json['content'] ?? '',
-      date: json['date'] ?? '',
+      date: json['date'] ?? DateTime.now().toIso8601String(),
     );
   }
 
