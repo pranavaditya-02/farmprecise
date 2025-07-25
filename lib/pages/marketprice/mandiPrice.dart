@@ -30,7 +30,7 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
   // Cache configuration
   static const String CACHE_KEY = 'mandi_prices_cache';
   static const String CACHE_TIMESTAMP_KEY = 'mandi_prices_timestamp';
-  static const Duration CACHE_DURATION = Duration(hours: 12); // Cache for 12 hours
+  static const Duration CACHE_DURATION = Duration(hours: 8); // Cache for 12 hours
 
   @override
   void initState() {
@@ -161,7 +161,7 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
 
         for (var record in data['records']) {
           final mandiPrice = MandiPrice.fromJson(record);
-          if (mandiPrice.state == 'Kerala') { 
+          if (mandiPrice.state == 'Tamil Nadu') { 
             prices.add(mandiPrice);
           }
         }

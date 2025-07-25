@@ -125,7 +125,7 @@ class _FarmingChatbotState extends State<FarmingChatbot>
     setState(() {
       _messages.add(ChatMessage(
         text:
-            "🌱 Welcome to AgriSense AI - Your Smart Farming Companion!\n\nI provide expert assistance with:\n\n🌾 Crop Management & Disease Detection\n📊 Market Analytics & Price Trends\n💧 Smart Irrigation Solutions\n🌿 Fertilizer & Nutrient Guidance\n🦗 Integrated Pest Management\n🌤️ Weather-Based Recommendations\n\nHow may I assist you today?",
+            "🌱 Welcome to HeNa AI - Your Smart Farming Companion!\n\nI provide expert assistance with:\n\n🌾 Crop Management & Disease Detection\n📊 Market Analytics & Price Trends\n💧 Smart Irrigation Solutions\n🌿 Fertilizer & Nutrient Guidance\n🦗 Integrated Pest Management\n🌤️ Weather-Based Recommendations\n\nHow may I assist you today?",
         isUser: false,
         timestamp: DateTime.now(),
         type: MessageType.text,
@@ -323,7 +323,7 @@ class _FarmingChatbotState extends State<FarmingChatbot>
       List<Map<String, dynamic>> parts = [
         {
           'text': '''
-As AgriSense AI, analyze these ${imagePaths.length} agricultural images comprehensively. Provide detailed insights on:
+As HeNa AI, analyze these ${imagePaths.length} agricultural images comprehensively. Provide detailed insights on:
 
 1. 🌱 Crop/Plant Identification across all images
 2. 🦠 Disease or Pest Detection comparison
@@ -520,7 +520,7 @@ Future<void> _processDocumentWithGemini(
             'parts': [
               {
                 'text': '''
-You are AgriSense AI, an agricultural expert assistant. A user has uploaded a document titled "$fileName".
+You are HeNa AI, an agricultural expert assistant. A user has uploaded a document titled "$fileName".
 
 Document Content:
 $documentContent
@@ -687,7 +687,7 @@ Keep response under 500 words.
      final DateTime now = DateTime.now();
     final String currentDate = "${now.day}/${now.month}/${now.year}";
     final String enhancedPrompt = '''
-You are AgriSense AI, a professional agricultural assistant specializing in modern farming solutions. Provide accurate, practical, and science-based advice for farmers.
+You are HeNa AI, a professional agricultural assistant specializing in modern farming solutions. Provide accurate, practical, and science-based advice for farmers.
 
 Context: You're integrated into a comprehensive farming platform that offers:
 - IoT-enabled precision agriculture
@@ -874,7 +874,7 @@ Keep response under 500 words.
               'parts': [
                 {
                   'text': '''
-As AgriSense AI, analyze this agricultural image with professional expertise. Provide detailed insights on:
+As HeNa AI, analyze this agricultural image with professional expertise. Provide detailed insights on:
 
 1. 🌱 Crop/Plant Identification
 2. 🦠 Disease or Pest Detection
@@ -1019,7 +1019,7 @@ Keep response under 500 words.
         backgroundColor: Colors.green,
         centerTitle: true,
         title: const Text(
-          'AgriSense AI',
+          'HeNa AI',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -1078,7 +1078,7 @@ Keep response under 500 words.
                         ),
                         const SizedBox(height: 20),
                         const Text(
-                          'Chat with AgriSense AI...',
+                          'Chat with HeNa AI...',
                           style: TextStyle(
                             color: Color(0xFF2E7D32),
                             fontSize: 18,
