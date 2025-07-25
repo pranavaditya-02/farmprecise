@@ -5,7 +5,6 @@ import 'package:farmprecise/components/custom_drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CacheManager {
@@ -83,7 +82,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
   bool _isLoading = false;
   bool _isRefreshing = false;
   String? _lastSearchQuery;
-  final Random _random = Random();
   
   // Color scheme
   static const Color primaryGreen = Color(0xFF2E7D32);
@@ -99,11 +97,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
     setState(() {
       _selectedIndex = index;
     });
-  }
-
-  // Generate random likes count (between 0 and 50)
-  int _generateRandomLikes() {
-    return _random.nextInt(51);
   }
 
   @override
@@ -124,28 +117,29 @@ class _CommunityScreenState extends State<CommunityScreen> {
       if (!forceRefresh) {
         final cachedPosts = await CacheManager.getCachedPosts();
         if (cachedPosts != null) {
-          setState(() {
-            _posts = cachedPosts
-                .map((post) => PostItem(
-                      username: post['USERNAME'] ?? '',
-                      date: post['DATE'] ?? '',
-                      title: post['TITLE'] ?? '',
-                      content: post['CONTENT'] ?? '',
-                      commentsCount: post['commentsCount'] ?? 0,
-                      likesCount: post['likesCount'] ?? _generateRandomLikes(),
-                      isLiked: post['isLiked'] ?? false,
-                      replies: (post['replies'] as List<dynamic>?)
-                          ?.map((reply) => Reply.fromJson(reply as Map<String, dynamic>))
-                          .toList() ?? <Reply>[],
-                      onLike: _handleLike,
-                      onReply: _handleReply,
-                    ))
-                .toList();
-            _filteredPosts = _posts;
-            _isLoading = false;
-          });
-          return;
-        }
+  setState(() {
+    _posts = cachedPosts
+        .map((post) => PostItem(
+              id: post['id'] ?? 0,
+              username: post['USERNAME'] ?? '',
+              date: post['DATE'] ?? '',
+              title: post['TITLE'] ?? '',
+              content: post['CONTENT'] ?? '',
+              commentsCount: post['commentsCount'] ?? 0,
+              likesCount: post['likesCount'] ?? 0,
+              isLiked: post['isLiked'] ?? false,
+              replies: (post['replies'] as List<dynamic>?)
+                  ?.map((reply) => Reply.fromJson(reply as Map<String, dynamic>))
+                  .toList() ?? <Reply>[],
+              onLike: _handleLike,
+              onReply: _handleReply,
+            ))
+        .toList();
+    _filteredPosts = _posts;
+    _isLoading = false;
+  });
+  return;
+}
       }
 
       // Fetch from server
@@ -171,67 +165,22 @@ class _CommunityScreenState extends State<CommunityScreen> {
   }
 
   Future<void> _fetchPostsFromServer() async {
-    final response = await http.get(
-      Uri.parse('http://$ipaddress:3000/community'),
-      headers: {'Cache-Control': 'no-cache'},
-    ).timeout(Duration(seconds: 10));
+  final response = await http.get(
+    Uri.parse('http://$ipaddress:3000/community'),
+    headers: {'Cache-Control': 'no-cache'},
+  ).timeout(Duration(seconds: 10));
 
-    if (response.statusCode == 200) {
-      final List<dynamic> postsJson = json.decode(response.body);
-      final posts = postsJson
-          .map((post) => PostItem(
-                username: post['USERNAME'] ?? '',
-                date: post['DATE'] ?? '',
-                title: post['TITLE'] ?? '',
-                content: post['CONTENT'] ?? '',
-                commentsCount: post['commentsCount'] ?? 0,
-                likesCount: post['likesCount'] ?? _generateRandomLikes(),
-                isLiked: post['isLiked'] ?? false,
-                replies: (post['replies'] as List<dynamic>?)
-                    ?.map((reply) => Reply.fromJson(reply as Map<String, dynamic>))
-                    .toList() ?? <Reply>[],
-                onLike: _handleLike,
-                onReply: _handleReply,
-              ))
-          .toList();
-
-      // Cache the posts with random likes
-      final postsToCache = postsJson.map((post) {
-        return {
-          ...post,
-          'likesCount': post['likesCount'] ?? _generateRandomLikes(),
-        };
-      }).toList();
-      
-      await CacheManager.cachePosts(postsToCache.cast<Map<String, dynamic>>());
-
-      setState(() {
-        _posts = posts;
-        _filteredPosts = _posts;
-      });
-      
-      // Clear search cache when new data is loaded
-      _searchCache.clear();
-    } else {
-      throw Exception('Failed to load posts: ${response.statusCode}');
-    }
-  }
-
-  Future<List<PostItem>?> _loadStaleCache() async {
-    final prefs = await SharedPreferences.getInstance();
-    final cachedPostsJson = prefs.getString(CacheManager.POSTS_CACHE_KEY);
-    
-    if (cachedPostsJson == null) return null;
-    
-    final List<dynamic> postsJson = jsonDecode(cachedPostsJson);
-    return postsJson
+  if (response.statusCode == 200) {
+    final List<dynamic> postsJson = json.decode(response.body);
+    final posts = postsJson
         .map((post) => PostItem(
+              id: post['id'],
               username: post['USERNAME'] ?? '',
               date: post['DATE'] ?? '',
               title: post['TITLE'] ?? '',
               content: post['CONTENT'] ?? '',
-              commentsCount: post['commentsCount'] ?? 0,
-              likesCount: post['likesCount'] ?? _generateRandomLikes(),
+              commentsCount: post['comments_count'] ?? 0,
+              likesCount: post['likes_count'] ?? 0,
               isLiked: post['isLiked'] ?? false,
               replies: (post['replies'] as List<dynamic>?)
                   ?.map((reply) => Reply.fromJson(reply as Map<String, dynamic>))
@@ -240,52 +189,125 @@ class _CommunityScreenState extends State<CommunityScreen> {
               onReply: _handleReply,
             ))
         .toList();
-  }
 
-  void _handleLike(PostItem post) {
+    // Cache the posts
+    final postsToCache = postsJson.map((post) {
+      return {
+        'id': post['id'],
+        'USERNAME': post['USERNAME'],
+        'TITLE': post['TITLE'],
+        'CONTENT': post['CONTENT'],
+        'DATE': post['DATE'],
+        'commentsCount': post['comments_count'] ?? 0,
+        'likesCount': post['likes_count'] ?? 0,
+        'isLiked': post['isLiked'] ?? false,
+        'replies': post['replies'] ?? [],
+      };
+    }).toList();
+    
+    await CacheManager.cachePosts(postsToCache.cast<Map<String, dynamic>>());
+
     setState(() {
-      final index = _posts.indexOf(post);
-      if (index != -1) {
-        // Calculate new likes count based on current state
-        int newLikesCount;
-        bool newIsLiked;
-        
-        if (post.isLiked) {
-          // Currently liked, so unlike (decrement by 1)
-          newLikesCount = post.likesCount - 1;
-          newIsLiked = false;
-        } else {
-          // Currently not liked, so like (increment by 1)
-          newLikesCount = post.likesCount + 1;
-          newIsLiked = true;
-        }
-        
-        // Ensure likes count doesn't go below 0
-        if (newLikesCount < 0) {
-          newLikesCount = 0;
-        }
-
-        _posts[index] = PostItem(
-          username: post.username,
-          date: post.date,
-          title: post.title,
-          content: post.content,
-          commentsCount: post.commentsCount,
-          likesCount: newLikesCount,
-          isLiked: newIsLiked,
-          replies: post.replies,
-          onLike: _handleLike,
-          onReply: _handleReply,
-        );
-        _filteredPosts = _posts;
-      }
+      _posts = posts;
+      _filteredPosts = _posts;
     });
+    
+    // Clear search cache when new data is loaded
+    _searchCache.clear();
+  } else {
+    throw Exception('Failed to load posts: ${response.statusCode}');
   }
+}
 
-  void _handleReply(PostItem post) {
-    _showReplyDialog(context, post);
+  Future<List<PostItem>?> _loadStaleCache() async {
+  final prefs = await SharedPreferences.getInstance();
+  final cachedPostsJson = prefs.getString(CacheManager.POSTS_CACHE_KEY);
+  
+  if (cachedPostsJson == null) return null;
+  
+  final List<dynamic> postsJson = jsonDecode(cachedPostsJson);
+  return postsJson
+      .map((post) => PostItem(
+            id: post['id'] ?? 0,
+            username: post['USERNAME'] ?? '',
+            date: post['DATE'] ?? '',
+            title: post['TITLE'] ?? '',
+            content: post['CONTENT'] ?? '',
+            commentsCount: post['commentsCount'] ?? 0,
+            likesCount: post['likesCount'] ?? 0,
+            isLiked: post['isLiked'] ?? false,
+            replies: (post['replies'] as List<dynamic>?)
+                ?.map((reply) => Reply.fromJson(reply as Map<String, dynamic>))
+                .toList() ?? <Reply>[],
+            onLike: _handleLike,
+            onReply: _handleReply,
+          ))
+      .toList();
+}
+
+  void _handleLike(PostItem post) async {
+  // Find the post in the list to get its index and current state
+  final index = _posts.indexOf(post);
+  if (index == -1) return;
+
+  final currentPost = _posts[index];
+  final newIsLiked = !currentPost.isLiked;
+  final action = newIsLiked ? 'like' : 'unlike';
+  
+  try {
+    // Make API call to toggle like
+    final response = await http.post(
+      Uri.parse('http://$ipaddress:3000/community/${currentPost.id}/like'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': 'current_user', // Replace with actual username
+        'action': action,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+      
+      if (responseData['success'] == true) {
+        setState(() {
+          // Calculate new likes count
+          int newLikesCount = currentPost.likesCount;
+          if (newIsLiked && responseData['action'] == 'liked') {
+            newLikesCount = currentPost.likesCount + 1;
+          } else if (!newIsLiked && responseData['action'] == 'unliked') {
+            newLikesCount = currentPost.likesCount - 1;
+          }
+
+          // Ensure likes count doesn't go below 0
+          if (newLikesCount < 0) newLikesCount = 0;
+
+          _posts[index] = PostItem(
+            id: currentPost.id,
+            username: currentPost.username,
+            date: currentPost.date,
+            title: currentPost.title,
+            content: currentPost.content,
+            commentsCount: currentPost.commentsCount,
+            likesCount: newLikesCount,
+            isLiked: newIsLiked,
+            replies: currentPost.replies,
+            onLike: _handleLike,
+            onReply: _handleReply,
+          );
+          _filteredPosts = _posts;
+        });
+      }
+    }
+  } catch (e) {
+    print('Error toggling like: $e');
+    _showSnackBar('Failed to update like. Please try again.');
   }
+}
 
+
+ void _handleReply(PostItem post) {
+  _showReplyDialog(context, post);
+}
   void _showReplyDialog(BuildContext context, PostItem post) {
     final replyController = TextEditingController();
     final usernameController = TextEditingController();
@@ -376,34 +398,58 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  void _addReply(PostItem post, String username, String content) {
-    setState(() {
-      final index = _posts.indexOf(post);
-      if (index != -1) {
-        final newReply = Reply(
-          username: username,
-          content: content,
-          date: DateTime.now().toIso8601String(),
-        );
-        
-        final updatedReplies = List<Reply>.from(post.replies)..add(newReply);
-        
-        _posts[index] = PostItem(
-          username: post.username,
-          date: post.date,
-          title: post.title,
-          content: post.content,
-          commentsCount: post.commentsCount + 1,
-          likesCount: post.likesCount,
-          isLiked: post.isLiked,
-          replies: updatedReplies,
-          onLike: _handleLike,
-          onReply: _handleReply,
-        );
-        _filteredPosts = _posts;
+  void _addReply(PostItem post, String username, String content) async {
+  try {
+    final response = await http.post(
+      Uri.parse('http://$ipaddress:3000/community/${post.id}/reply'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': username,
+        'content': content,
+      }),
+    );
+
+    if (response.statusCode == 201) {
+      final responseData = jsonDecode(response.body);
+      
+      if (responseData['success'] == true) {
+        setState(() {
+          final index = _posts.indexOf(post);
+          if (index != -1) {
+            final newReply = Reply(
+              username: username,
+              content: content,
+              date: DateTime.now().toIso8601String(),
+            );
+            
+            final updatedReplies = List<Reply>.from(post.replies)..add(newReply);
+            
+            _posts[index] = PostItem(
+              id: post.id,
+              username: post.username,
+              date: post.date,
+              title: post.title,
+              content: post.content,
+              commentsCount: post.commentsCount + 1,
+              likesCount: post.likesCount,
+              isLiked: post.isLiked,
+              replies: updatedReplies,
+              onLike: _handleLike,
+              onReply: _handleReply,
+            );
+            _filteredPosts = _posts;
+          }
+        });
+        _showSnackBar('Reply added successfully!');
       }
-    });
+    } else {
+      _showSnackBar('Failed to add reply. Please try again.');
+    }
+  } catch (e) {
+    print('Error adding reply: $e');
+    _showSnackBar('Failed to add reply. Please try again.');
   }
+}
 
   void _searchPosts(String query) {
     // Use cached search results if available
@@ -431,75 +477,75 @@ class _CommunityScreenState extends State<CommunityScreen> {
     });
   }
 
-  Future<void> _addNewPost(String username, String title, String content) async {
-    final date = DateTime.now().toIso8601String().substring(0, 10);
-    final randomLikes = _generateRandomLikes();
-    
-    setState(() {
-      _isLoading = true;
-    });
+ Future<void> _addNewPost(String username, String title, String content) async {
+  final date = DateTime.now().toIso8601String().substring(0, 10);
+  
+  setState(() {
+    _isLoading = true;
+  });
 
-    try {
-      final response = await http.post(
-        Uri.parse('http://$ipaddress:3000/community'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, dynamic>{
-          'USERNAME': username,
-          'TITLE': title,
-          'CONTENT': content,
-          'DATE': date,
-          'likesCount': randomLikes,
-        }),
-      ).timeout(Duration(seconds: 10));
+  try {
+    final response = await http.post(
+      Uri.parse('http://$ipaddress:3000/community'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'USERNAME': username,
+        'TITLE': title,
+        'CONTENT': content,
+        'DATE': date,
+      }),
+    ).timeout(Duration(seconds: 10));
 
-      if (response.statusCode == 201) {
-        final newPost = PostItem(
-          username: username,
-          date: date,
-          title: title,
-          content: content,
-          commentsCount: 0,
-          likesCount: randomLikes,
-          isLiked: false,
-          replies: [],
-          onLike: _handleLike,
-          onReply: _handleReply,
-        );
+    if (response.statusCode == 201) {
+      final responseData = jsonDecode(response.body);
+      final newPost = PostItem(
+        id: responseData['postId'] ?? 0,
+        username: username,
+        date: date,
+        title: title,
+        content: content,
+        commentsCount: 0,
+        likesCount: 0,
+        isLiked: false,
+        replies: [],
+        onLike: _handleLike,
+        onReply: _handleReply,
+      );
 
-        setState(() {
-          _posts.insert(0, newPost); // Add to beginning
-          _filteredPosts = _posts;
-        });
-
-        // Update cache
-        await CacheManager.addPostToCache({
-          'USERNAME': username,
-          'TITLE': title,
-          'CONTENT': content,
-          'DATE': date,
-          'commentsCount': 0,
-          'likesCount': randomLikes,
-          'isLiked': false,
-          'replies': <Map<String, dynamic>>[],
-        });
-
-        // Clear search cache as data has changed
-        _searchCache.clear();
-        
-       
-      } else {
-        throw Exception('Failed to add post: ${response.statusCode}');
-      }
-    } catch (e) {
-      _showSnackBar('Failed to add post. Please try again.');
-    } finally {
       setState(() {
-        _isLoading = false;
+        _posts.insert(0, newPost); // Add to beginning
+        _filteredPosts = _posts;
       });
+
+      // Update cache
+      await CacheManager.addPostToCache({
+        'id': responseData['postId'] ?? 0,
+        'USERNAME': username,
+        'TITLE': title,
+        'CONTENT': content,
+        'DATE': date,
+        'commentsCount': 0,
+        'likesCount': 0,
+        'isLiked': false,
+        'replies': <Map<String, dynamic>>[],
+      });
+
+      // Clear search cache as data has changed
+      _searchCache.clear();
+      
+    } else {
+      throw Exception('Failed to add post: ${response.statusCode}');
     }
+  } catch (e) {
+    _showSnackBar('Failed to add post. Please try again.');
+  } finally {
+    setState(() {
+      _isLoading = false;
+    });
   }
+}
 
   Future<void> _onRefresh() async {
     setState(() {
@@ -925,6 +971,7 @@ class Reply {
 }
 
 class PostItem extends StatelessWidget {
+  final int id;
   final String username;
   final String date;
   final String title;
@@ -942,6 +989,7 @@ class PostItem extends StatelessWidget {
   static const Color accentGreen = Color(0xFF66BB6A);
 
   PostItem({
+    required this.id,
     required this.username,
     required this.date,
     required this.title,
