@@ -5,6 +5,7 @@ import 'package:farmprecise/components/custom_drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CacheManager {
@@ -82,6 +83,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   bool _isLoading = false;
   bool _isRefreshing = false;
   String? _lastSearchQuery;
+  final Random _random = Random();
   
   // Color scheme
   static const Color primaryGreen = Color(0xFF2E7D32);
@@ -97,6 +99,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  // Generate random likes count (between 0 and 50)
+  int _generateRandomLikes() {
+    return _random.nextInt(51);
   }
 
   @override
@@ -125,7 +132,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       title: post['TITLE'] ?? '',
                       content: post['CONTENT'] ?? '',
                       commentsCount: post['commentsCount'] ?? 0,
-                      likesCount: post['likesCount'] ?? 0,
+                      likesCount: post['likesCount'] ?? _generateRandomLikes(),
                       isLiked: post['isLiked'] ?? false,
                       replies: (post['replies'] as List<dynamic>?)
                           ?.map((reply) => Reply.fromJson(reply as Map<String, dynamic>))
@@ -151,7 +158,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           _posts = cachedPosts;
           _filteredPosts = _posts;
         });
-        _showSnackBar('Loaded cached data. Pull to refresh for latest posts.');
+       
       } else {
         _showSnackBar('Failed to load posts. Please check your connection.');
       }
@@ -178,7 +185,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 title: post['TITLE'] ?? '',
                 content: post['CONTENT'] ?? '',
                 commentsCount: post['commentsCount'] ?? 0,
-                likesCount: post['likesCount'] ?? 0,
+                likesCount: post['likesCount'] ?? _generateRandomLikes(),
                 isLiked: post['isLiked'] ?? false,
                 replies: (post['replies'] as List<dynamic>?)
                     ?.map((reply) => Reply.fromJson(reply as Map<String, dynamic>))
@@ -188,8 +195,15 @@ class _CommunityScreenState extends State<CommunityScreen> {
               ))
           .toList();
 
-      // Cache the posts
-      await CacheManager.cachePosts(postsJson.cast<Map<String, dynamic>>());
+      // Cache the posts with random likes
+      final postsToCache = postsJson.map((post) {
+        return {
+          ...post,
+          'likesCount': post['likesCount'] ?? _generateRandomLikes(),
+        };
+      }).toList();
+      
+      await CacheManager.cachePosts(postsToCache.cast<Map<String, dynamic>>());
 
       setState(() {
         _posts = posts;
@@ -217,7 +231,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               title: post['TITLE'] ?? '',
               content: post['CONTENT'] ?? '',
               commentsCount: post['commentsCount'] ?? 0,
-              likesCount: post['likesCount'] ?? 0,
+              likesCount: post['likesCount'] ?? _generateRandomLikes(),
               isLiked: post['isLiked'] ?? false,
               replies: (post['replies'] as List<dynamic>?)
                   ?.map((reply) => Reply.fromJson(reply as Map<String, dynamic>))
@@ -232,14 +246,33 @@ class _CommunityScreenState extends State<CommunityScreen> {
     setState(() {
       final index = _posts.indexOf(post);
       if (index != -1) {
+        // Calculate new likes count based on current state
+        int newLikesCount;
+        bool newIsLiked;
+        
+        if (post.isLiked) {
+          // Currently liked, so unlike (decrement by 1)
+          newLikesCount = post.likesCount - 1;
+          newIsLiked = false;
+        } else {
+          // Currently not liked, so like (increment by 1)
+          newLikesCount = post.likesCount + 1;
+          newIsLiked = true;
+        }
+        
+        // Ensure likes count doesn't go below 0
+        if (newLikesCount < 0) {
+          newLikesCount = 0;
+        }
+
         _posts[index] = PostItem(
           username: post.username,
           date: post.date,
           title: post.title,
           content: post.content,
           commentsCount: post.commentsCount,
-          likesCount: post.isLiked ? post.likesCount - 1 : post.likesCount + 1,
-          isLiked: !post.isLiked,
+          likesCount: newLikesCount,
+          isLiked: newIsLiked,
           replies: post.replies,
           onLike: _handleLike,
           onReply: _handleReply,
@@ -400,6 +433,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Future<void> _addNewPost(String username, String title, String content) async {
     final date = DateTime.now().toIso8601String().substring(0, 10);
+    final randomLikes = _generateRandomLikes();
     
     setState(() {
       _isLoading = true;
@@ -411,11 +445,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
-        body: jsonEncode(<String, String>{
+        body: jsonEncode(<String, dynamic>{
           'USERNAME': username,
           'TITLE': title,
           'CONTENT': content,
           'DATE': date,
+          'likesCount': randomLikes,
         }),
       ).timeout(Duration(seconds: 10));
 
@@ -426,7 +461,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           title: title,
           content: content,
           commentsCount: 0,
-          likesCount: 0,
+          likesCount: randomLikes,
           isLiked: false,
           replies: [],
           onLike: _handleLike,
@@ -445,7 +480,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           'CONTENT': content,
           'DATE': date,
           'commentsCount': 0,
-          'likesCount': 0,
+          'likesCount': randomLikes,
           'isLiked': false,
           'replies': <Map<String, dynamic>>[],
         });
@@ -453,7 +488,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
         // Clear search cache as data has changed
         _searchCache.clear();
         
-        _showSnackBar('Post added successfully!');
+       
       } else {
         throw Exception('Failed to add post: ${response.statusCode}');
       }
