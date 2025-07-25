@@ -155,11 +155,7 @@ class CustomDrawer extends StatelessWidget {
                 );
               },
             ),
-            // Rent Products Screen Navigation
            
-
-            
-
             ListTile(
               leading: Icon(Icons.flight, color: Colors.green),
               title: Text('Drone Data'),

@@ -62,6 +62,32 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
     await fetchMandiPrices();
   }
 
+  // Pull-to-refresh handler
+  Future<void> _handleRefresh() async {
+    await loadMandiPrices(forceRefresh: true);
+    
+    // Show success message
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text('Data refreshed successfully!'),
+            ],
+          ),
+          backgroundColor: Colors.green[600],
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    }
+  }
+
   Future<List<MandiPrice>?> loadFromCache() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -103,6 +129,10 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
 
   Future<void> fetchMandiPrices() async {
     try {
+      setState(() {
+        isLoading = true;
+      });
+
       // Get API key from environment, fallback to hardcoded if not found
       final apiKey = dotenv.env['MARKET_PRICE_KEY'];
       
@@ -131,7 +161,7 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
 
         for (var record in data['records']) {
           final mandiPrice = MandiPrice.fromJson(record);
-          if (mandiPrice.state == 'Tamil Nadu') { 
+          if (mandiPrice.state == 'Kerala') { 
             prices.add(mandiPrice);
           }
         }
@@ -156,7 +186,21 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
         isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading data: $e')),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Expanded(child: Text('Error loading data: $e')),
+            ],
+          ),
+          backgroundColor: Colors.red[600],
+          duration: Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
       );
     }
   }
@@ -224,151 +268,170 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          // Search and Filter Section
-          Card(
-            margin: EdgeInsets.all(12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: BorderSide(
-                color: Colors.green[100]!,
-                width: 1,
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        color: Colors.green[600],
+        backgroundColor: Colors.white,
+        strokeWidth: 2.5,
+        child: Column(
+          children: [
+            // Search and Filter Section
+            Card(
+              margin: EdgeInsets.all(12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(
+                  color: Colors.green[100]!,
+                  width: 1,
+                ),
               ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // Search Bar
-                  TextField(
-                    controller: searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search commodity or market...',
-                      prefixIcon: Icon(Icons.search, color: Colors.green[600]),
-                      suffixIcon: searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: Icon(Icons.clear),
-                              onPressed: () {
-                                searchController.clear();
-                                applyFilters();
-                              },
-                            )
-                          : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.green[300]!),
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    // Search Bar
+                    TextField(
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search commodity or market...',
+                        prefixIcon: Icon(Icons.search, color: Colors.green[600]),
+                        suffixIcon: searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(Icons.clear),
+                                onPressed: () {
+                                  searchController.clear();
+                                  applyFilters();
+                                },
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.green[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.green[600]!, width: 2),
+                        ),
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.green[600]!, width: 2),
-                      ),
+                      onChanged: (value) => applyFilters(),
                     ),
-                    onChanged: (value) => applyFilters(),
-                  ),
-                  SizedBox(height: 16),
+                    SizedBox(height: 16),
 
-                  // Filter Chips
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildFilterChipWithIcon(
-                          icon: Icons.location_city,
-                          label: 'District',
-                          selectedValue: selectedDistrict,
-                          options: districts.toList(),
-                          onSelected: (value) {
-                            setState(() {
-                              selectedDistrict = value;
-                              // Clear market and commodity when district changes
-                              selectedMarket = null;
-                              selectedCommodity = null;
-                            });
-                            applyFilters();
-                          },
-                        ),
-                        SizedBox(width: 8),
-                        _buildFilterChipWithIcon(
-                          icon: Icons.store_mall_directory,
-                          label: 'Market',
-                          selectedValue: selectedMarket,
-                          options: getAvailableMarkets(),
-                          onSelected: (value) {
-                            setState(() {
-                              selectedMarket = value;
-                              // Clear commodity when market changes
-                              selectedCommodity = null;
-                            });
-                            applyFilters();
-                          },
-                        ),
-                        SizedBox(width: 8),
-                        _buildFilterChipWithIcon(
-                          icon: Icons.shopping_basket,
-                          label: 'Commodity',
-                          selectedValue: selectedCommodity,
-                          options: getAvailableCommodities(),
-                          onSelected: (value) {
-                            setState(() {
-                              selectedCommodity = value;
-                            });
-                            applyFilters();
-                          },
-                        ),
-                        SizedBox(width: 8),
-                        // Clear Filters Button
-                        if (selectedDistrict != null ||
-                            selectedMarket != null ||
-                            selectedCommodity != null)
-                          ActionChip(
-                            avatar: Icon(Icons.clear, color: Colors.red[700], size: 18),
-                            label: Text('Clear All'),
-                            onPressed: clearFilters,
-                            backgroundColor: Colors.red[50],
-                            labelStyle: TextStyle(color: Colors.red[700]),
+                    // Filter Chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildFilterChipWithIcon(
+                            icon: Icons.location_city,
+                            label: 'District',
+                            selectedValue: selectedDistrict,
+                            options: districts.toList(),
+                            onSelected: (value) {
+                              setState(() {
+                                selectedDistrict = value;
+                                // Clear market and commodity when district changes
+                                selectedMarket = null;
+                                selectedCommodity = null;
+                              });
+                              applyFilters();
+                            },
                           ),
-                      ],
+                          SizedBox(width: 8),
+                          _buildFilterChipWithIcon(
+                            icon: Icons.store_mall_directory,
+                            label: 'Market',
+                            selectedValue: selectedMarket,
+                            options: getAvailableMarkets(),
+                            onSelected: (value) {
+                              setState(() {
+                                selectedMarket = value;
+                                // Clear commodity when market changes
+                                selectedCommodity = null;
+                              });
+                              applyFilters();
+                            },
+                          ),
+                          SizedBox(width: 8),
+                          _buildFilterChipWithIcon(
+                            icon: Icons.shopping_basket,
+                            label: 'Commodity',
+                            selectedValue: selectedCommodity,
+                            options: getAvailableCommodities(),
+                            onSelected: (value) {
+                              setState(() {
+                                selectedCommodity = value;
+                              });
+                              applyFilters();
+                            },
+                          ),
+                          SizedBox(width: 8),
+                          // Clear Filters Button
+                          if (selectedDistrict != null ||
+                              selectedMarket != null ||
+                              selectedCommodity != null)
+                            ActionChip(
+                              avatar: Icon(Icons.clear, color: Colors.red[700], size: 18),
+                              label: Text('Clear All'),
+                              onPressed: clearFilters,
+                              backgroundColor: Colors.red[50],
+                              labelStyle: TextStyle(color: Colors.red[700]),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          
-          // Price List
-          Expanded(
-            child: isLoading
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        LoadingAnimationWidget.threeArchedCircle(
-                          color: Colors.green[600]!,
-                          size: 50,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'Loading market prices...',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 16,
+            
+            // Price List
+            Expanded(
+              child: isLoading
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          LoadingAnimationWidget.threeArchedCircle(
+                            color: Colors.green[600]!,
+                            size: 50,
                           ),
-                        ),
-                      ],
-                    ),
-                  )
-                : filteredPrices.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        padding: EdgeInsets.all(16),
-                        itemCount: filteredPrices.length,
-                        itemBuilder: (context, index) {
-                          return _buildPriceCard(filteredPrices[index]);
-                        },
+                          SizedBox(height: 16),
+                          Text(
+                            'Loading market prices...',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
-          ),
-        ],
+                    )
+                  : filteredPrices.isEmpty
+                      ? _buildEmptyState()
+                      : CustomScrollView(
+                          slivers: [
+                            SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) {
+                                  return Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 10) +
+                                        EdgeInsets.only(bottom: 12),
+                                    child: _buildPriceCard(filteredPrices[index]),
+                                  );
+                                },
+                                childCount: filteredPrices.length,
+                              ),
+                            ),
+                            // Add some bottom padding
+                            SliverToBoxAdapter(
+                              child: SizedBox(height: 16),
+                            ),
+                          ],
+                        ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -435,32 +498,47 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
-          SizedBox(height: 16),
-          Text(
-            'No results found',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey[600]),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Try adjusting your filters or search terms',
-            style: TextStyle(color: Colors.grey[500]),
-          ),
-          SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: clearFilters,
-            child: Text('Clear Filters'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green[600],
-              foregroundColor: Colors.white,
+    return CustomScrollView(
+      slivers: [
+        SliverFillRemaining(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
+                SizedBox(height: 16),
+                Text(
+                  'No results found',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey[600]),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Try adjusting your filters or search terms',
+                  style: TextStyle(color: Colors.grey[500]),
+                ),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: clearFilters,
+                  child: Text('Clear Filters'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[600],
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Pull down to refresh data',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -469,7 +547,6 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
     double spreadPercent = (priceSpread / price.modalPrice) * 100;
     
     return Card(
-      margin: EdgeInsets.only(bottom: 12),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),

@@ -141,7 +141,7 @@ class _DroneInfoCard extends StatelessWidget {
             ),
           ),
           Image.asset(
-            'assets/drone.png',
+            'assets/drone1.png',
             width: 80,
             height: 80,
             errorBuilder: (context, error, stackTrace) {
