@@ -433,7 +433,6 @@ Keep response under 500 words.
 
 // Process document
 
-// part-2
 Future<void> _processDocumentWithGemini(
       String filePath, String fileName) async {
     setState(() {

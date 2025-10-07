@@ -142,7 +142,7 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
 
       // Step 1: Get total records with limit=1
       final metaResponse = await http.get(
-        Uri.parse('https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=$apiKey&format=json&limit=9000'),
+        Uri.parse('https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=$apiKey&format=json&limit=7000'),
       );
       int recordCount = 0;
       if (metaResponse.statusCode == 200) {
@@ -161,7 +161,7 @@ class _MandiPricesScreenState extends State<MandiPricesScreen> {
 
         for (var record in data['records']) {
           final mandiPrice = MandiPrice.fromJson(record);
-          if (mandiPrice.state == 'Tamil Nadu') { 
+          if (mandiPrice.state == 'Kerala') { 
             prices.add(mandiPrice);
           }
         }

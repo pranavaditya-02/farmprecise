@@ -1,7 +1,6 @@
 import 'package:farmprecise/pages/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:farmprecise/pages/dashboard/dashboard.dart';
 
 class RentProductsForm extends StatefulWidget {
   @override
@@ -26,7 +25,7 @@ class _RentProductsFormState extends State<RentProductsForm> {
   // List of image URLs for the carousel
   final List<String> _imageUrls = [
     'https://cactilandscape.com/wp-content/uploads/2024/07/Smart-Irrigation-Systems-scaled.jpeg',
-    'https://vst.co.jp/wp-content/uploads/2023/12/automatic-weeding-machine.jpeg',
+    'https://static.producer.com/wp-content/uploads/2019/01/10131530/44-5col-EarthSense-weed-robot.jpg',
     'https://www.bearingtips.com/wp-content/uploads/2021/06/SMB320-Agricultural-drone.jpg',
   ];
 

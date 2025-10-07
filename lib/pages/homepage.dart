@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:ui';
-import 'package:farmprecise/home1.dart';
 import 'package:farmprecise/pages/chatbot/chatbotscreen.dart';
 import 'package:farmprecise/pages/dashboard/farmercommunity.dart';
 import 'package:farmprecise/pages/crops/cropcalendar.dart';
@@ -80,7 +79,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> fetchWeatherData() async {
     final response = await http.get(Uri.parse(
-        'http://api.weatherapi.com/v1/current.json?key=2a78e81f9890453aaf4122524252301&q=11.4979484,77.2782678'));
+        'http://api.weatherapi.com/v1/current.json?key=2a78e81f9890453aaf4122524252301&q=18.9265,72.8312'));
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -192,7 +191,7 @@ class _HomePageState extends State<HomePage> {
                               ? Text(
                                   conditionText,
                                   style: const TextStyle(
-                                      color: Colors.white, fontSize: 16),
+                                      color: Colors.white, fontSize: 12),
                                 )
                               : LoadingAnimationWidget.waveDots(
                                   color: Colors.white, size: 16),
