@@ -7,6 +7,27 @@
     "Solutions (Modern)": "Apply fungicides and use resistant corn varieties.",
     "Recommended Manures": "Compost, green manure.",
     "Recommended Fertilizers": "Nitrogen-rich fertilizers like urea.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=urea+fertilizer+corn",
+      "Fungicides": "https://www.amazon.in/s?k=corn+fungicide+rust"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "The disease thrives in warm and humid conditions."
   },
   "Corn_Gray_Leaf_Spot": {
@@ -17,6 +38,27 @@
     "Solutions (Modern)": "Fungicide applications and resistant corn hybrids.",
     "Recommended Manures": "Compost, green manure.",
     "Recommended Fertilizers": "Balanced fertilizers with micronutrients.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=NPK+fertilizer+corn",
+      "Fungicides": "https://www.amazon.in/s?k=cercospora+fungicide"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "It affects corn during the growing season, especially in humid environments."
   },
   "Corn_Healthy": {
@@ -27,6 +69,27 @@
     "Solutions (Modern)": "Monitor plant health using modern farming techniques and AI-based systems.",
     "Recommended Manures": "Compost, organic fertilizers.",
     "Recommended Fertilizers": "Balanced fertilizers, including nitrogen, phosphorus, and potassium.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=NPK+balanced+fertilizer",
+      "Organic Manure": "https://www.amazon.in/s?k=organic+compost+fertilizer"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "Healthy corn requires optimal growth conditions and regular monitoring."
   },
   "Corn_Northern_Leaf_Blight": {
@@ -37,9 +100,30 @@
     "Solutions (Modern)": "Fungicide applications and resistant hybrids.",
     "Recommended Manures": "Compost, green manure.",
     "Recommended Fertilizers": "Nitrogen-rich fertilizers like urea.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=urea+nitrogen+fertilizer",
+      "Fungicides": "https://www.amazon.in/s?k=northern+leaf+blight+fungicide"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "This disease thrives under cool, moist conditions."
   },
-  "Maize_Ear_Rot": {
+  "maize_ear_rot": {
     "Disease Name": "Maize Ear Rot",
     "Cause": "Caused by various fungi like Fusarium and Aspergillus, which infect the corn ears.",
     "Details": "Fungal infection causes ear rot, leading to discolored kernels and a bad smell.",
@@ -47,6 +131,27 @@
     "Solutions (Modern)": "Use fungicides and control moisture levels.",
     "Recommended Manures": "Compost, well-rotted manure.",
     "Recommended Fertilizers": "Balanced fertilizers, especially phosphorus.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=phosphorus+fertilizer+maize",
+      "Fungicides": "https://www.amazon.in/s?k=ear+rot+fungicide+maize"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "Ear rot commonly occurs during the wet and humid harvest periods."
   },
   "maize_fall_armyworm": {
@@ -57,9 +162,30 @@
     "Solutions (Modern)": "Pesticides and biocontrol agents.",
     "Recommended Manures": "Organic manure.",
     "Recommended Fertilizers": "Nitrogen-based fertilizers.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=nitrogen+fertilizer+maize",
+      "Pesticides": "https://www.amazon.in/s?k=fall+armyworm+pesticide"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "Fall armyworms are migratory and can cause significant crop loss."
   },
-  "Maize_Stem_Borer": {
+  "maize_stem_borer": {
     "Disease Name": "Maize Stem Borer",
     "Cause": "Caused by the insect Busseola fusca, which bores into maize stems.",
     "Details": "Stem borers damage the maize plant by feeding on the stalks, leading to plant wilting.",
@@ -67,6 +193,27 @@
     "Solutions (Modern)": "Insecticides and resistant maize varieties.",
     "Recommended Manures": "Compost, organic manures.",
     "Recommended Fertilizers": "Balanced fertilizers.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=balanced+NPK+fertilizer",
+      "Insecticides": "https://www.amazon.in/s?k=stem+borer+insecticide"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "Stem borers are active during the growing season and can damage maize plants severely."
   },
   "Cotton_Aphids": {
@@ -77,9 +224,31 @@
     "Solutions (Modern)": "Insecticides and integrated pest management.",
     "Recommended Manures": "Compost, organic fertilizers.",
     "Recommended Fertilizers": "Balanced fertilizers.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=cotton+balanced+fertilizer",
+      "Insecticides": "https://www.amazon.in/s?k=aphid+insecticide+cotton",
+      "Neem Oil": "https://www.amazon.in/s?k=neem+oil+organic+pesticide"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "Aphids are common during warm weather and can also transmit viruses."
   },
-  "Cotton_Army_Worm": {
+  "Cotton_Army_worm": {
     "Disease Name": "Cotton Armyworm",
     "Cause": "Caused by the insect Spodoptera litura, which feeds on cotton leaves and bolls.",
     "Details": "Armyworms cause defoliation and boll damage in cotton plants.",
@@ -87,6 +256,27 @@
     "Solutions (Modern)": "Pesticides and biocontrol methods.",
     "Recommended Manures": "Compost, green manure.",
     "Recommended Fertilizers": "Phosphorus and potassium-based fertilizers.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=phosphorus+potassium+fertilizer",
+      "Pesticides": "https://www.amazon.in/s?k=armyworm+pesticide+cotton"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "The armyworm is a migratory pest that can damage large areas quickly."
   },
   "Cotton_Bacterial_Blight": {
@@ -97,6 +287,27 @@
     "Solutions (Modern)": "Apply copper-based bactericides and use disease-resistant genetically modified varieties.",
     "Recommended Manures": "Organic compost and farmyard manure.",
     "Recommended Fertilizers": "Balanced fertilizers with adequate potassium and phosphorus.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=potassium+phosphorus+fertilizer",
+      "Bactericides": "https://www.amazon.in/s?k=copper+bactericide+cotton"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "The disease spreads rapidly in warm, humid conditions and through infected seeds."
   },
   "Cotton_Cotton_Boll_Rot": {
@@ -107,6 +318,27 @@
     "Solutions (Modern)": "Fungicides and resistant cotton varieties.",
     "Recommended Manures": "Well-decomposed compost.",
     "Recommended Fertilizers": "Balanced fertilizers.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=balanced+NPK+cotton+fertilizer",
+      "Fungicides": "https://www.amazon.in/s?k=boll+rot+fungicide+cotton"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "The disease is more prevalent during wet conditions."
   },
   "Cotton_Green_Cotton_Boll": {
@@ -117,6 +349,27 @@
     "Solutions (Modern)": "Fungicide treatments and pest control.",
     "Recommended Manures": "Organic manure.",
     "Recommended Fertilizers": "Nitrogen and potassium fertilizers.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=nitrogen+potassium+cotton+fertilizer",
+      "Fungicides": "https://www.amazon.in/s?k=cotton+boll+fungicide"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "The condition can be linked to excessive moisture and pest infestation."
   },
   "Cotton_Healthy": {
@@ -127,6 +380,27 @@
     "Solutions (Modern)": "Use of precision agriculture, drone-based monitoring, and integrated pest management (IPM).",
     "Recommended Manures": "Well-decomposed organic manure and green manure.",
     "Recommended Fertilizers": "Balanced NPK fertilizers based on soil test results.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=cotton+NPK+balanced+fertilizer",
+      "Organic Manure": "https://www.amazon.in/s?k=organic+cotton+manure"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "Optimal temperature, irrigation, and pest control are crucial for healthy cotton growth."
   },
   "Cotton_Powdery_mildew": {
@@ -137,6 +411,27 @@
     "Solutions (Modern)": "Use sulfur-based fungicides and resistant varieties.",
     "Recommended Manures": "Well-rotted farmyard manure and compost.",
     "Recommended Fertilizers": "Sulfur-rich fertilizers and balanced NPK fertilizers.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=sulfur+fertilizer+cotton",
+      "Fungicides": "https://www.amazon.in/s?k=powdery+mildew+fungicide"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "The disease thrives in dry, warm conditions and spreads via airborne spores."
   },
   "Cotton_Target_spot": {
@@ -147,6 +442,27 @@
     "Solutions (Modern)": "Application of fungicides like azoxystrobin and proper canopy management.",
     "Recommended Manures": "Organic compost and green manure.",
     "Recommended Fertilizers": "Potassium-rich fertilizers to strengthen plant resistance.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=potassium+rich+fertilizer",
+      "Fungicides": "https://www.amazon.in/s?k=azoxystrobin+fungicide"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "This disease is common in high-humidity regions and spreads via water splashes and wind."
   },
   "Paddy_Bacterial_Leaf_Blight": {
@@ -157,6 +473,27 @@
     "Solutions (Modern)": "Use copper-based bactericides and AI-based monitoring.",
     "Recommended Manures": "Compost, green manure.",
     "Recommended Fertilizers": "Nitrogen-rich fertilizers like urea.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=urea+nitrogen+paddy+fertilizer",
+      "Bactericides": "https://www.amazon.in/s?k=copper+bactericide+rice"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "A common disease in humid conditions, especially during the rainy season."
   },
   "Paddy_Brown_Spot": {
@@ -167,6 +504,27 @@
     "Solutions (Modern)": "Fungicide applications and integrated pest management.",
     "Recommended Manures": "Compost, organic manure.",
     "Recommended Fertilizers": "Phosphorus-based fertilizers.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=phosphorus+fertilizer+rice",
+      "Fungicides": "https://www.amazon.in/s?k=brown+spot+fungicide+rice"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "The disease is common during the growing season in wet conditions."
   },
   "Paddy_Healthy": {
@@ -177,6 +535,27 @@
     "Solutions (Modern)": "AI-based health monitoring and sustainable farming practices.",
     "Recommended Manures": "Compost, green manure.",
     "Recommended Fertilizers": "Balanced fertilizers including nitrogen, phosphorus, and potassium.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=NPK+balanced+rice+fertilizer",
+      "Organic Manure": "https://www.amazon.in/s?k=organic+rice+compost"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "Healthy paddy requires optimal environmental conditions and regular monitoring."
   },
   "Paddy_Leaf_Blast": {
@@ -187,6 +566,27 @@
     "Solutions (Modern)": "Apply systemic fungicides like tricyclazole and use remote sensing technology for early disease detection.",
     "Recommended Manures": "Farmyard manure and compost enriched with phosphorus.",
     "Recommended Fertilizers": "Balanced NPK fertilizers with controlled nitrogen levels.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=controlled+NPK+rice+fertilizer",
+      "Fungicides": "https://www.amazon.in/s?k=tricyclazole+fungicide+rice"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "The disease spreads rapidly in warm, humid conditions and is more severe in water-deficient fields."
   },
   "Paddy_Leaf_Scald": {
@@ -197,6 +597,27 @@
     "Solutions (Modern)": "Application of fungicides like propiconazole and real-time monitoring using AI-driven tools.",
     "Recommended Manures": "Well-decomposed farmyard manure and bio-compost.",
     "Recommended Fertilizers": "Potassium-rich fertilizers to enhance disease resistance.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=potassium+rich+rice+fertilizer",
+      "Fungicides": "https://www.amazon.in/s?k=propiconazole+fungicide"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "It spreads under warm, wet conditions and is commonly observed in densely planted fields."
   },
   "Paddy_Sheath_Blight": {
@@ -207,7 +628,60 @@
     "Solutions (Modern)": "Apply fungicides like hexaconazole and integrate biological control using Trichoderma species.",
     "Recommended Manures": "Green manure and farmyard compost.",
     "Recommended Fertilizers": "Balanced nitrogen and potassium fertilizers.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=nitrogen+potassium+rice+fertilizer",
+      "Fungicides": "https://www.amazon.in/s?k=hexaconazole+fungicide",
+      "Bio-control": "https://www.amazon.in/s?k=trichoderma+bio+control"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "The disease spreads through infected soil and plant debris and thrives in warm, humid conditions."
+  },
+  "Paddy_Tungro": {
+    "Disease Name": "Paddy Tungro",
+    "Cause": "Caused by a combination of Rice Tungro Bacilliform Virus (RTBV) and Rice Tungro Spherical Virus (RTSV), transmitted by leafhoppers.",
+    "Details": "Tungro causes stunted growth, yellow-orange discoloration of leaves, and reduced tillering in paddy plants.",
+    "Solutions (Traditional)": "Use resistant rice varieties, remove infected plants, and maintain field sanitation.",
+    "Solutions (Modern)": "Control vector (leafhoppers) using insecticides and adopt virus-free nursery practices.",
+    "Recommended Manures": "Compost, green manure, and well-decomposed farmyard manure.",
+    "Recommended Fertilizers": "Balanced fertilizers, especially nitrogen and potassium, to support recovery.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=nitrogen+potassium+recovery+fertilizer",
+      "Insecticides": "https://www.amazon.in/s?k=leafhopper+insecticide+rice"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
+    "Additional Info": "The disease spreads rapidly through leafhopper vectors, especially in warm and humid conditions. Early detection and vector control are crucial."
   },
   "SugarCane_BacterialBlights": {
     "Disease Name": "Sugar Cane Bacterial Blights",
@@ -217,6 +691,27 @@
     "Solutions (Modern)": "Copper-based bactericides and modern disease detection methods.",
     "Recommended Manures": "Compost, green manure.",
     "Recommended Fertilizers": "Nitrogen-based fertilizers.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=nitrogen+sugarcane+fertilizer",
+      "Bactericides": "https://www.amazon.in/s?k=copper+bactericide+sugarcane"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "Bacterial blights thrive in warm, humid conditions."
   },
   "SugarCane_Healthy": {
@@ -227,6 +722,27 @@
     "Solutions (Modern)": "Use of AI-based monitoring systems and precision agriculture.",
     "Recommended Manures": "Compost, organic manure.",
     "Recommended Fertilizers": "Balanced fertilizers with nitrogen and potassium.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=balanced+sugarcane+fertilizer",
+      "Organic Manure": "https://www.amazon.in/s?k=organic+sugarcane+compost"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "Healthy sugar cane requires good management practices and optimal environmental conditions."
   },
   "SugarCane_Mosaic": {
@@ -237,6 +753,27 @@
     "Solutions (Modern)": "Viral control through resistance breeding and modern pest management.",
     "Recommended Manures": "Compost, well-rotted manure.",
     "Recommended Fertilizers": "Phosphorus-rich fertilizers.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=phosphorus+sugarcane+fertilizer",
+      "Insecticides": "https://www.amazon.in/s?k=aphid+control+sugarcane"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "Mosaic virus is spread by aphids and can reduce sugarcane yields significantly."
   },
   "SugarCane_RedRot": {
@@ -247,6 +784,27 @@
     "Solutions (Modern)": "Fungicide applications and resistant varieties.",
     "Recommended Manures": "Compost, organic matter.",
     "Recommended Fertilizers": "Balanced fertilizers with micronutrients.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=micronutrient+sugarcane+fertilizer",
+      "Fungicides": "https://www.amazon.in/s?k=red+rot+fungicide+sugarcane"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "Red rot is prevalent in areas with poor drainage and wet conditions."
   },
   "SugarCane_Rust": {
@@ -257,6 +815,27 @@
     "Solutions (Modern)": "Apply fungicides like tebuconazole and use early disease detection through remote sensing.",
     "Recommended Manures": "Organic compost and farmyard manure.",
     "Recommended Fertilizers": "Balanced fertilizers with sufficient potassium to enhance disease resistance.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=potassium+enhanced+sugarcane+fertilizer",
+      "Fungicides": "https://www.amazon.in/s?k=tebuconazole+fungicide"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "The disease spreads through airborne spores and thrives in warm, humid conditions."
   },
   "SugarCane_Yellow": {
@@ -267,6 +846,27 @@
     "Solutions (Modern)": "Apply biological control agents for aphids and use virus-resistant sugarcane varieties.",
     "Recommended Manures": "Well-rotted organic compost and green manure.",
     "Recommended Fertilizers": "Nitrogen and potassium-rich fertilizers to strengthen plant immunity.",
+    "Product Links": {
+      "Fertilizers": "https://www.amazon.in/s?k=nitrogen+potassium+immunity+fertilizer",
+      "Bio-control": "https://www.amazon.in/s?k=aphid+bio+control+agents"
+    },
+    "Nearby Shops": {
+      "Shop 1": {
+        "name": "Chennai Agri Seeds & Fertilizers",
+        "location": "36/2, Triplicane High Road, Triplicane, Chennai - 600005",
+        "mobile": "+91 9840123456"
+      },
+      "Shop 2": {
+        "name": "Tamil Nadu Agricultural Store",
+        "location": "15, Poonamallee High Road, Egmore, Chennai - 600008",
+        "mobile": "+91 9841234567"
+      },
+      "Shop 3": {
+        "name": "Green Valley Farm Supplies",
+        "location": "42, Anna Salai, Thousand Lights, Chennai - 600006",
+        "mobile": "+91 9842345678"
+      }
+    },
     "Additional Info": "The disease spreads through infected planting material and aphid vectors."
   }
 }

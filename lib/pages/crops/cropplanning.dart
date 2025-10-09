@@ -1276,7 +1276,7 @@ double _estimateSectionHeight(PDFSection section) {
 
   Future<String> _callGeminiAPI(String prompt) async {
     final url = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent');
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent');
     try {
       final response = await http.post(
         url,

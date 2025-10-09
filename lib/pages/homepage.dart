@@ -291,35 +291,35 @@ class _HomePageState extends State<HomePage> {
                   'Paddy (Rice)',
                   'Harvest on Nov 10, 2025',
                   'Maturing',
-                  '110 cm',
+                  '110 cm', // height/elevation in cm
                   'https://safalseeds.in/public/images/paddy-seeds.jpg',
                 ),
                 _buildFieldCard(
                   'Maize',
                   'Harvest on Dec 05, 2025',
                   'Ready',
-                  '220 cm',
+                  '220 cm', // cm
                   'https://media.istockphoto.com/id/1485792634/photo/ripe-yellow-corn-cob-on-the-field.jpg?s=612x612&w=0&k=20&c=5Lhbh5a15DNMdyaxBPGR4XAIjTPXz1Ct52i2WcoVOQs=',
                 ),
                 _buildFieldCard(
                   'Turmeric',
                   'Harvest on Jan 20, 2026',
                   'Harvest soon',
-                  '90 cm',
+                  '90 cm', // cm
                   'https://media.istockphoto.com/id/954270512/photo/turmeric-root-herb-plant.jpg?s=612x612&w=0&k=20&c=vccQL2B2NTOBzBkfP6oIx_jkD8WOVDWrYU57cjNJfOE=',
                 ),
                 _buildFieldCard(
                   'Groundnut',
                   'Harvest on Oct 30, 2025',
                   'Good',
-                  '45 cm',
+                  '45 cm', // cm
                   'https://www.protectourlivelihood.in/wp-content/uploads/2025/04/Image-Groundnut.jpg',
                 ),
                 _buildFieldCard(
                   'Banana',
                   'Harvest on Mar 15, 2026',
                   'Fruit set',
-                  '250 cm',
+                  '250 cm', // cm
                   'https://cdn4.volusion.store/uyqbk-sezkn/v/vspfiles/photos/FRUBAN-FRU-S-TX-STAR-2.jpg?v-cache=1729145494',
                 ),
               ],
@@ -389,7 +389,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildFieldCard(String title, String subtitle, String status,
       String length, String imageUrl) {
     return GestureDetector(
-      onTap: () => _showCropDetailsDialog(context, title, length, subtitle),
+      onTap: () => _showCropDetailsDialog(context, title, length, subtitle, status),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -435,8 +435,115 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showCropDetailsDialog(
-      BuildContext context, String cropName, String length, String subtitle) {
+      BuildContext context, String cropName, String length, String subtitle, String status) {
     String harvestDate = subtitle.replaceAll('Harvest on ', '');
+
+    // Infer phase from status (simple heuristic)
+    String inferPhase(String s) {
+      final lower = s.toLowerCase();
+      if (lower.contains('fruit') || lower.contains('flower') || lower.contains('set')) return 'Flowering / Reproductive';
+      if (lower.contains('mature') || lower.contains('maturing') || lower.contains('ready') || lower.contains('harvest')) return 'Maturity / Late season';
+      if (lower.contains('harvest soon')) return 'Reproductive / Near maturity';
+      return 'Vegetative';
+    }
+
+    // More accurate, concise and layman-friendly guidance.
+    // Each entry: short "what to look for" (symptoms), likely causes (pathogen/pest) and simple prevention / first-aid steps.
+    Map<String, Map<String, Map<String, String>>> cropGuidance = {
+      'paddy': {
+        'Vegetative': {
+          'issues':
+              'Symptoms: small brown/grey spots on leaves, tilted/necrotic patches. Likely: Rice blast (fungus) or brown spot.',
+          'prevention':
+              'Use resistant seed, treat seed before sowing, avoid excess nitrogen, maintain stable water level and remove straw/volunteer plants. If spots spread, contact extension for recommended fungicide and spray timing.'
+        },
+        'Reproductive': {
+          'issues':
+              'Symptoms: yellowing and wilting of leaves, hollowness in grains. Likely: Bacterial leaf blight or sheath rot.',
+          'prevention':
+              'Avoid stagnant water, clean field debris, use balanced fertilizer, and harvest on time. For severe outbreaks, seek local extension advice for appropriate control.'
+        },
+        'Maturity / Late season': {
+          'issues':
+              'Symptoms: lodging, discoloured grains or rot in wet weather. Likely: grain rot or secondary rots.',
+          'prevention':
+              'Harvest promptly after maturity, dry grain well before storage to prevent storage molds.'
+        }
+      },
+      'maize': {
+        'Vegetative': {
+          'issues':
+              'Symptoms: elongated grey/brown leaf lesions, holes on leaves from caterpillars. Likely: leaf blights or stem/leaf borers (insects).',
+          'prevention':
+              'Plant certified seed, rotate crops, remove residues, monitor for caterpillars and use pheromone traps/biocontrol where available. Ask extension before using insecticide.'
+        },
+        'Maturity / Late season': {
+          'issues':
+              'Symptoms: discoloured kernels, mouldy ears when wet. Likely: ear rots (fungal) and storage molds.',
+          'prevention':
+              'Harvest at correct moisture, dry well, avoid mechanical damage to cobs and store in dry, ventilated place.'
+        }
+      },
+      'turmeric': {
+        'Vegetative': {
+          'issues':
+              'Symptoms: yellow/black spots on leaves, soft/rotten rhizomes in wet soil. Likely: leaf spot (fungus) or rhizome rot (waterlogged soil causing Pythium/Phytophthora).',
+          'prevention':
+              'Use healthy, disease-free rhizomes for planting, raise beds for good drainage, avoid waterlogging, and practise crop rotation. Remove and burn badly infected plants.'
+        },
+        'Reproductive': {
+          'issues':
+              'Symptoms: rotting of harvested rhizomes, poor curing. Likely: rhizome rot and secondary rots if harvested wet.',
+          'prevention':
+              'Harvest when soil is not waterlogged, cure rhizomes properly in shade/dry place, and store dry. For persistent rot problems, consult extension for seed treatment options.'
+        }
+      },
+      'groundnut': {
+        'Vegetative': {
+          'issues':
+              'Symptoms: small dark spots on leaves or defoliation. Likely: early/late leaf spot (fungal).',
+          'prevention':
+              'Use tolerant varieties, keep proper spacing for airflow, remove old pods/residues, and rotate with non-host crops. Follow extension advice if sprays are needed.'
+        },
+        'Maturity / Late season': {
+          'issues':
+              'Symptoms: rotted pods or discoloured kernels; storage contamination. Likely: pod rot and aflatoxin from Aspergillus when not dried properly.',
+          'prevention':
+              'Harvest on time, dry pods thoroughly in sun on clean surfaces, and store in cool, dry places. Avoid mixing damaged pods into stock.'
+        }
+      },
+      'banana': {
+        'Vegetative': {
+          'issues':
+              'Symptoms: yellowing leaves, stunted growth, root decline. Likely: nematodes or Panama wilt (Fusarium) in some areas.',
+          'prevention':
+              'Plant disease-free suckers, keep fields well drained, practice crop sanitation and consider nematode management (mulch/organic amendments). Contact extension if wilt symptoms spread.'
+        },
+        'Flowering / Reproductive': {
+          'issues':
+              'Symptoms: dark/brown patches on fingers, bunch rots in humid weather. Likely: Sigatoka/leaf spot diseases and bacterial/fungal rots.',
+          'prevention':
+              'Ensure good airflow (prune leaves), avoid bruising fruit, harvest timely. If outbreaks occur, seek extension guidance for safe control methods.'
+        }
+      }
+    };
+
+    final phase = inferPhase(status);
+    final key = cropName.toLowerCase();
+    String issuesText = 'No specific issues identified for this crop and phase.';
+    String preventionText = 'Keep field clean, use healthy seed/suckers, rotate crops and monitor regularly. Contact local agricultural extension for exact measures.';
+
+    if (cropGuidance.keys.any((k) => key.contains(k))) {
+      final matched = cropGuidance.keys.firstWhere((k) => key.contains(k));
+      final phaseMap = cropGuidance[matched]!;
+      if (phaseMap.containsKey(phase)) {
+        issuesText = phaseMap[phase]!['issues']!;
+        preventionText = phaseMap[phase]!['prevention']!;
+      } else if (phaseMap.containsKey('Vegetative')) {
+        issuesText = phaseMap['Vegetative']!['issues']!;
+        preventionText = phaseMap['Vegetative']!['prevention']!;
+      }
+    }
 
     showDialog(
       context: context,
@@ -482,7 +589,7 @@ class _HomePageState extends State<HomePage> {
                     _buildDetailRow('Days After Seeding', '28 Days',
                         valueColor: Colors.green[300]!),
                     const SizedBox(height: 16),
-                    _buildDetailRow('Phase', 'Vegetative',
+                    _buildDetailRow('Phase', phase,
                         valueColor: Colors.green[300]!),
                     const SizedBox(height: 16),
                     _buildDetailRow('Season', 'Dry',
@@ -493,6 +600,58 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 16),
                     _buildDetailRow('Harvest on', harvestDate,
                         valueColor: Colors.green[300]!),
+                    const SizedBox(height: 24),
+
+                    // Highlighted, clear disease + prevention block
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange.withOpacity(0.4), width: 1.2),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Likely disease / pest (what to look for)',
+                            style: TextStyle(
+                              color: Colors.orange[200],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            issuesText,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Simple prevention & first steps',
+                            style: TextStyle(
+                              color: Colors.green[200],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            preventionText,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                          ),
+                          
+                        ],
+                      ),
+                    ),
+
                     const SizedBox(height: 24),
                     Container(
                       padding: const EdgeInsets.symmetric(

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';  
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:tflite_v2/tflite_v2.dart';
@@ -7,6 +7,7 @@ import 'package:farmprecise/components/bottom_navigation.dart';
 import 'package:farmprecise/components/custom_appbar.dart';
 import 'package:farmprecise/components/custom_drawer.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class CropScannerScreen extends StatefulWidget {
   @override
@@ -19,6 +20,26 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
   Map<String, String>? _diseaseData;
   int _selectedIndex = 0;
   Map<String, dynamic> _diseaseDetails = {};
+  
+  // Description related variables
+  final TextEditingController _descriptionController = TextEditingController();
+  late stt.SpeechToText _speech;
+  bool _isListening = false;
+  String _selectedLanguage = 'en_US'; // Default language
+  
+  // Available languages for speech recognition
+  final Map<String, String> _languages = {
+    'en_US': 'English',
+    'hi_IN': 'Hindi',
+    'ta_IN': 'Tamil',
+    'te_IN': 'Telugu',
+    'kn_IN': 'Kannada',
+    'ml_IN': 'Malayalam',
+    'bn_IN': 'Bengali',
+    'gu_IN': 'Gujarati',
+    'mr_IN': 'Marathi',
+    'pa_IN': 'Punjabi',
+  };
 
   String _selectedCrop = 'Cotton'; // Default selected crop
   final List<String> _crops = ['Cotton', 'Corn', 'Paddy', 'SugarCane'];
@@ -47,8 +68,47 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
   void initState() {
     super.initState();
     _loadModel(_selectedCrop);
-
     _loadDiseaseDetails();
+    _initializeSpeech();
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  // Initialize speech recognition
+  void _initializeSpeech() async {
+    _speech = stt.SpeechToText();
+    bool available = await _speech.initialize();
+    if (!available) {
+      print("Speech recognition not available");
+    }
+  }
+
+  // Start/Stop listening for speech
+  void _toggleListening() async {
+    if (!_isListening) {
+      bool available = await _speech.initialize();
+      if (available) {
+        setState(() => _isListening = true);
+        _speech.listen(
+          onResult: (result) {
+            setState(() {
+              _descriptionController.text = result.recognizedWords;
+            });
+          },
+          localeId: _selectedLanguage,
+          listenMode: stt.ListenMode.confirmation,
+          cancelOnError: true,
+          onSoundLevelChange: (level) {},
+        );
+      }
+    } else {
+      setState(() => _isListening = false);
+      _speech.stop();
+    }
   }
 
   Future<void> _loadDiseaseDetails() async {
@@ -123,18 +183,16 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
                 '⚠️ $detectedLabel - Oops! Invalid image detected. Please upload a clear crop image for disease detection🌱📸',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color:
-                      Colors.white, // Text color is white for better contrast
+                  color: Colors.white,
                 ),
               ),
-              backgroundColor:
-                  Colors.red.withOpacity(0.7), // Deeper red with higher opacity
+              backgroundColor: Colors.red.withOpacity(0.7),
               duration: Duration(seconds: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
                 side: BorderSide(
-                  color: Colors.white, // Border color set to white
-                  width: 1.5, // Border width
+                  color: Colors.white,
+                  width: 1.5,
                 ),
               ),
               margin: EdgeInsets.symmetric(
@@ -161,10 +219,10 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
                 detectedLabel,
             'Cause': _diseaseDetails[detectedLabel]?['Cause'] ?? 'N/A',
             'Details': _diseaseDetails[detectedLabel]?['Details'] ?? 'N/A',
-            'Solutions (Traditional)': _diseaseDetails[detectedLabel]
+            'Solutions (Organic)': _diseaseDetails[detectedLabel]
                     ?['Solutions (Traditional)'] ??
                 'N/A',
-            'Solutions (Modern)':
+            'Solutions ()':
                 _diseaseDetails[detectedLabel]?['Solutions (Modern)'] ?? 'N/A',
             'Recommended Manures':
                 _diseaseDetails[detectedLabel]?['Recommended Manures'] ?? 'N/A',
@@ -181,6 +239,9 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
           _diseaseData = {
             'Crop Type': _selectedCrop,
             'Disease Name': 'Unknown',
+            'User Description': _descriptionController.text.isNotEmpty 
+                ? _descriptionController.text 
+                : 'No description provided',
             'Confidence': 'N/A'
           };
         });
@@ -191,6 +252,9 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
         _diseaseData = {
           'Crop Type': _selectedCrop,
           'Disease Name': 'Error',
+          'User Description': _descriptionController.text.isNotEmpty 
+              ? _descriptionController.text 
+              : 'No description provided',
           'Confidence': 'N/A'
         };
       });
@@ -220,17 +284,16 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
             '⚠️ Please select an image first.',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.white, // White text for better visibility
+              color: Colors.white,
             ),
           ),
-          backgroundColor:
-              Colors.orange.withOpacity(0.8), // Deeper red with higher opacity
-          duration: Duration(seconds: 2), // You can adjust the duration
+          backgroundColor: Colors.orange.withOpacity(0.8),
+          duration: Duration(seconds: 2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
             side: BorderSide(
-              color: Colors.white, // White border color
-              width: 1.5, // Border width
+              color: Colors.white,
+              width: 1.5,
             ),
           ),
           margin: EdgeInsets.symmetric(
@@ -360,6 +423,148 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
                   ),
                 ],
               ),
+              SizedBox(height: 20.0),
+              
+              // Description Section
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Description (Optional)',
+                        style: TextStyle(
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      SizedBox(height: 8.0),
+                      Text(
+                        'Describe any symptoms or issues you notice with your crop',
+                        style: TextStyle(
+                          fontSize: 12.0,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      SizedBox(height: 12.0),
+                      
+                      // Language selection
+                      Row(
+                        children: [
+                          Text(
+                            'Language: ',
+                            style: TextStyle(
+                              fontSize: 14.0,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Expanded(
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _selectedLanguage,
+                                isDense: true,
+                                onChanged: (String? newValue) {
+                                  if (newValue != null) {
+                                    setState(() {
+                                      _selectedLanguage = newValue;
+                                    });
+                                  }
+                                },
+                                items: _languages.entries.map((entry) {
+                                  return DropdownMenuItem<String>(
+                                    value: entry.key,
+                                    child: Text(
+                                      entry.value,
+                                      style: TextStyle(fontSize: 14.0),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 8.0),
+                      
+                      // Text field with voice input
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey[300]!),
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _descriptionController,
+                                maxLines: 3,
+                                decoration: InputDecoration(
+                                  hintText: 'Describe the crop condition, symptoms, or any concerns...',
+                                  hintStyle: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontSize: 14.0,
+                                  ),
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.all(12.0),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Colors.grey[300],
+                            ),
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(8.0),
+                                onTap: _toggleListening,
+                                child: Container(
+                                  padding: EdgeInsets.all(12.0),
+                                  child: Icon(
+                                    _isListening ? Icons.mic : Icons.mic_none,
+                                    color: _isListening ? Colors.red : Colors.green,
+                                    size: 24.0,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_isListening)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.mic,
+                                color: Colors.red,
+                                size: 16.0,
+                              ),
+                              SizedBox(width: 4.0),
+                              Text(
+                                'Listening... Speak now in ${_languages[_selectedLanguage]}',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12.0,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              
               SizedBox(height: 20.0),
               ElevatedButton(
                 onPressed: _submitImage,
