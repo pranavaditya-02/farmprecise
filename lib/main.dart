@@ -62,7 +62,7 @@ class Started extends StatelessWidget {
                 'Empowering Farmers with Data-driven Solutions',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 18, 
                   fontWeight: FontWeight.normal,
                   color: Colors.white,
                 ),

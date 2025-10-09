@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:tflite_v2/tflite_v2.dart';
 import 'package:farmprecise/components/bottom_navigation.dart';
 import 'package:farmprecise/components/custom_appbar.dart';
 import 'package:farmprecise/components/custom_drawer.dart';
@@ -23,38 +22,15 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
   String _selectedCrop = 'Cotton'; // Default selected crop
   final List<String> _crops = ['Cotton', 'Corn', 'Paddy', 'SugarCane'];
 
-  // Map to store model and label paths for each crop
-  final Map<String, Map<String, String>> _modelPaths = {
-    'Cotton': {
-      'model': 'assets/cotton_model.tflite',
-      'labels': 'assets/cotton_labels.txt'
-    },
-    'Corn': {
-      'model': 'assets/Corn_Model.tflite',
-      'labels': 'assets/Corn_Labels.txt'
-    },
-    'Paddy': {
-      'model': 'assets/rice_model.tflite',
-      'labels': 'assets/rice_labels.txt'
-    },
-    'SugarCane': {
-      'model': 'assets/sugarcane.tflite',
-      'labels': 'assets/sugarcane_labels.txt'
-    },
-  };
-
   @override
   void initState() {
     super.initState();
-    _loadModel(_selectedCrop);
-
     _loadDiseaseDetails();
   }
 
   Future<void> _loadDiseaseDetails() async {
     try {
-      final String jsonString =
-          await rootBundle.loadString('assets/diseasedata.json');
+      final String jsonString = await rootBundle.loadString('assets/diseasedata.json');
       setState(() {
         _diseaseDetails = json.decode(jsonString);
       });
@@ -69,134 +45,6 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
     }
   }
 
-  /// Load the TFLite model based on selected crop
-  Future<void> _loadModel(String crop) async {
-    Tflite.close(); // Close any previously loaded model
-    try {
-      final modelPath = _modelPaths[crop]?['model'];
-      final labelPath = _modelPaths[crop]?['labels'];
-
-      if (modelPath == null || labelPath == null) {
-        print("Model paths not found for crop: $crop");
-        return;
-      }
-
-      String? result = await Tflite.loadModel(
-        model: modelPath,
-        labels: labelPath,
-      );
-
-      if (result != null) {
-        print("Model loaded successfully for $crop: $result");
-      } else {
-        print("Failed to load model for $crop");
-      }
-    } catch (e) {
-      print("Failed to load model for $crop: $e");
-    }
-  }
-
-  /// Predict the disease based on the image
-  Future<void> _predictDisease(File image) async {
-    try {
-      var recognitions = await Tflite.runModelOnImage(
-        path: image.path,
-        imageMean: 0.0,
-        imageStd: 255.0,
-        numResults: 5,
-        threshold: 0.5,
-        asynch: true,
-      );
-
-      if (recognitions != null && recognitions.isNotEmpty) {
-        String detectedLabel = recognitions[0]['label'] ?? 'Unknown';
-        double confidence = (recognitions[0]['confidence'] ?? 0.0) * 100;
-
-        // Check if the detected object is not a crop
-        if (detectedLabel.contains('Human_Men') ||
-            detectedLabel.contains('Human_Women') ||
-            detectedLabel.contains('Vehicle') ||
-            detectedLabel.contains('Weeds')) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '⚠️ $detectedLabel - Oops! Invalid image detected. Please upload a clear crop image for disease detection🌱📸',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color:
-                      Colors.white, // Text color is white for better contrast
-                ),
-              ),
-              backgroundColor:
-                  Colors.red.withOpacity(0.7), // Deeper red with higher opacity
-              duration: Duration(seconds: 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: BorderSide(
-                  color: Colors.white, // Border color set to white
-                  width: 1.5, // Border width
-                ),
-              ),
-              margin: EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 10,
-              ),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-
-          // Clear the disease data and selected image
-          setState(() {
-            _diseaseData = null;
-            _selectedImage = null;
-          });
-
-          return;
-        }
-
-        setState(() {
-          _diseaseData = {
-            'Crop Type': _selectedCrop,
-            'Disease Name': _diseaseDetails[detectedLabel]?['Disease Name'] ??
-                detectedLabel,
-            'Cause': _diseaseDetails[detectedLabel]?['Cause'] ?? 'N/A',
-            'Details': _diseaseDetails[detectedLabel]?['Details'] ?? 'N/A',
-            'Solutions (Traditional)': _diseaseDetails[detectedLabel]
-                    ?['Solutions (Traditional)'] ??
-                'N/A',
-            'Solutions (Modern)':
-                _diseaseDetails[detectedLabel]?['Solutions (Modern)'] ?? 'N/A',
-            'Recommended Manures':
-                _diseaseDetails[detectedLabel]?['Recommended Manures'] ?? 'N/A',
-            'Recommended Fertilizers': _diseaseDetails[detectedLabel]
-                    ?['Recommended Fertilizers'] ??
-                'N/A',
-            'Additional Info':
-                _diseaseDetails[detectedLabel]?['Additional Info'] ?? 'N/A',
-            'Confidence': '${confidence.toStringAsFixed(2)}%',
-          };
-        });
-      } else {
-        setState(() {
-          _diseaseData = {
-            'Crop Type': _selectedCrop,
-            'Disease Name': 'Unknown',
-            'Confidence': 'N/A'
-          };
-        });
-      }
-    } catch (e) {
-      print("Error while predicting disease: $e");
-      setState(() {
-        _diseaseData = {
-          'Crop Type': _selectedCrop,
-          'Disease Name': 'Error',
-          'Confidence': 'N/A'
-        };
-      });
-    }
-  }
-
   /// Pick an image from the gallery or camera
   Future<void> _pickImage(ImageSource source) async {
     final pickedFile = await _picker.pickImage(source: source);
@@ -205,13 +53,36 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
       if (await image.exists()) {
         setState(() {
           _selectedImage = image;
-          _diseaseData = null;
+          // Show sample disease data when image is selected
+          _showSampleDiseaseData();
         });
       }
     }
   }
 
-  /// Submit image for prediction
+  /// Show sample disease data from JSON
+  void _showSampleDiseaseData() {
+    if (_diseaseDetails.isNotEmpty) {
+      // Get first disease entry for the selected crop as sample
+      final sampleDisease = _diseaseDetails.entries.first;
+      setState(() {
+        _diseaseData = {
+          'Crop Type': _selectedCrop,
+          'Disease Name': sampleDisease.value['Disease Name'] ?? 'Sample Disease',
+          'Cause': sampleDisease.value['Cause'] ?? 'Sample Cause',
+          'Details': sampleDisease.value['Details'] ?? 'Sample Details',
+          'Solutions (Traditional)': sampleDisease.value['Solutions (Traditional)'] ?? 'Sample Traditional Solutions',
+          'Solutions (Modern)': sampleDisease.value['Solutions (Modern)'] ?? 'Sample Modern Solutions',
+          'Recommended Manures': sampleDisease.value['Recommended Manures'] ?? 'Sample Manures',
+          'Recommended Fertilizers': sampleDisease.value['Recommended Fertilizers'] ?? 'Sample Fertilizers',
+          'Additional Info': sampleDisease.value['Additional Info'] ?? 'Sample Additional Info',
+          'Confidence': '95.5%', // Sample confidence score
+        };
+      });
+    }
+  }
+
+  /// Submit image for showing sample data
   void _submitImage() async {
     if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -220,17 +91,16 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
             '⚠️ Please select an image first.',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.white, // White text for better visibility
+              color: Colors.white,
             ),
           ),
-          backgroundColor:
-              Colors.orange.withOpacity(0.8), // Deeper red with higher opacity
-          duration: Duration(seconds: 2), // You can adjust the duration
+          backgroundColor: Colors.orange.withOpacity(0.8),
+          duration: Duration(seconds: 2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
             side: BorderSide(
-              color: Colors.white, // White border color
-              width: 1.5, // Border width
+              color: Colors.white,
+              width: 1.5,
             ),
           ),
           margin: EdgeInsets.symmetric(
@@ -240,11 +110,10 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-
       return;
     }
 
-    await _predictDisease(_selectedImage!);
+    _showSampleDiseaseData();
   }
 
   /// Handles navigation item selection
@@ -252,6 +121,13 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  /// Dummy method for crop model loading (can be expanded for actual ML model integration)
+  void _loadModel(String cropName) {
+    // For now, just reload disease details or perform any crop-specific logic if needed.
+    // You can implement actual model loading logic here if required.
+    _loadDiseaseDetails();
   }
 
   @override
