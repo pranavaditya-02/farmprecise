@@ -17,7 +17,7 @@ class CropScannerScreen extends StatefulWidget {
 class _CropScannerScreenState extends State<CropScannerScreen> {
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
-  Map<String, String>? _diseaseData;
+Map<String, dynamic>? _diseaseData;
   int _selectedIndex = 0;
   Map<String, dynamic> _diseaseDetails = {};
   
@@ -213,27 +213,31 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
         }
 
         setState(() {
-          _diseaseData = {
-            'Crop Type': _selectedCrop,
-            'Disease Name': _diseaseDetails[detectedLabel]?['Disease Name'] ??
-                detectedLabel,
-            'Cause': _diseaseDetails[detectedLabel]?['Cause'] ?? 'N/A',
-            'Details': _diseaseDetails[detectedLabel]?['Details'] ?? 'N/A',
-            'Solutions (Organic)': _diseaseDetails[detectedLabel]
-                    ?['Solutions (Traditional)'] ??
-                'N/A',
-            'Solutions ()':
-                _diseaseDetails[detectedLabel]?['Solutions (Modern)'] ?? 'N/A',
-            'Recommended Manures':
-                _diseaseDetails[detectedLabel]?['Recommended Manures'] ?? 'N/A',
-            'Recommended Fertilizers': _diseaseDetails[detectedLabel]
-                    ?['Recommended Fertilizers'] ??
-                'N/A',
-            'Additional Info':
-                _diseaseDetails[detectedLabel]?['Additional Info'] ?? 'N/A',
-            'Confidence': '${confidence.toStringAsFixed(2)}%',
-          };
-        });
+  _diseaseData = {
+    'Crop Type': _selectedCrop,
+    'Disease Name': _diseaseDetails[detectedLabel]?['Disease Name'] ??
+        detectedLabel,
+    'Cause': _diseaseDetails[detectedLabel]?['Cause'] ?? 'N/A',
+    'Details': _diseaseDetails[detectedLabel]?['Details'] ?? 'N/A',
+    'Solutions (Organic)': _diseaseDetails[detectedLabel]
+            ?['Solutions (Traditional)'] ??
+        'N/A',
+    'Solutions (Inorganic)':
+        _diseaseDetails[detectedLabel]?['Solutions (Modern)'] ?? 'N/A',
+    'Recommended Manures':
+        _diseaseDetails[detectedLabel]?['Recommended Manures'] ?? 'N/A',
+    'Recommended Fertilizers': _diseaseDetails[detectedLabel]
+            ?['Recommended Fertilizers'] ??
+        'N/A',
+      'Product Links': _diseaseDetails[detectedLabel]?['Product Links'],
+    'Nearby Shops': _diseaseDetails[detectedLabel]?['Nearby Shops'],
+    'Additional Info':
+        _diseaseDetails[detectedLabel]?['Additional Info'] ?? 'N/A',
+    'Confidence': '${confidence.toStringAsFixed(2)}%',
+    
+  };
+});
+
       } else {
         setState(() {
           _diseaseData = {
@@ -317,6 +321,178 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
     });
   }
 
+  Widget _buildResultCard(String key, dynamic value) {
+  if (key == 'Product Links' && value is Map && value.isNotEmpty) {
+    return _buildProductLinksSection(value);
+  } else if (key == 'Nearby Shops' && value is Map && value.isNotEmpty) {
+    return _buildNearbyShopsSection(value);
+  } else if (value is String) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$key:',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16.0,
+              color: Colors.green[800],
+            ),
+          ),
+          SizedBox(height: 4.0),
+          Text(
+            value,
+            style: TextStyle(fontSize: 16.0),
+          ),
+        ],
+      ),
+    );
+  }
+  return SizedBox.shrink();
+}
+
+Widget _buildProductLinksSection(Map productLinks) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Product Links:',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16.0,
+            color: Colors.green[800],
+          ),
+        ),
+        SizedBox(height: 8.0),
+        ...productLinks.entries.map((entry) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4.0),
+          child: InkWell(
+            onTap: () {
+              print('Opening link: ${entry.value}');
+            },
+            child: Container(
+              padding: EdgeInsets.all(12.0),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(8.0),
+                border: Border.all(color: Colors.blue[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.shopping_cart, color: Colors.blue[600], size: 20),
+                  SizedBox(width: 8.0),
+                  Expanded(
+                    child: Text(
+                      '${entry.key}',
+                      style: TextStyle(
+                        color: Colors.blue[700],
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.open_in_new, color: Colors.blue[600], size: 16),
+                ],
+              ),
+            ),
+          ),
+        )),
+      ],
+    ),
+  );
+}
+
+Widget _buildNearbyShopsSection(Map nearbyShops) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Nearby Shops:',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16.0,
+            color: Colors.green[800],
+          ),
+        ),
+        SizedBox(height: 8.0),
+        ...nearbyShops.entries.map((entry) {
+          final shopData = entry.value as Map;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6.0),
+            child: Container(
+              padding: EdgeInsets.all(12.0),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(8.0),
+                border: Border.all(color: Colors.green[200]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.store, color: Colors.green[600], size: 20),
+                      SizedBox(width: 8.0),
+                      Expanded(
+                        child: Text(
+                          shopData['name'] ?? 'Unknown Shop',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.0,
+                            color: Colors.green[800],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 6.0),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.location_on, color: Colors.grey[600], size: 16),
+                      SizedBox(width: 4.0),
+                      Expanded(
+                        child: Text(
+                          shopData['location'] ?? 'Location not available',
+                          style: TextStyle(fontSize: 14.0, color: Colors.grey[700]),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 4.0),
+                  Row(
+                    children: [
+                      Icon(Icons.phone, color: Colors.grey[600], size: 16),
+                      SizedBox(width: 4.0),
+                      InkWell(
+                        onTap: () {
+                          print('Calling: ${shopData['mobile']}');
+                        },
+                        child: Text(
+                          shopData['mobile'] ?? 'No contact',
+                          style: TextStyle(
+                            fontSize: 14.0,
+                            color: Colors.blue[700],
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -594,27 +770,7 @@ class _CropScannerScreenState extends State<CropScannerScreen> {
                         ),
                         SizedBox(height: 10.0),
                         ..._diseaseData!.entries.map(
-                          (entry) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${entry.key}:',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16.0,
-                                    color: Colors.green[800],
-                                  ),
-                                ),
-                                SizedBox(height: 4.0),
-                                Text(
-                                  entry.value,
-                                  style: TextStyle(fontSize: 16.0),
-                                ),
-                              ],
-                            ),
-                          ),
+                          (entry) => _buildResultCard(entry.key, entry.value),
                         ),
                       ],
                     ),
