@@ -10,12 +10,11 @@ app.use(bodyParser.json());
 app.use(cors());
 
 const pool = mysql.createPool({
-  host: "10.83.211.100", // Changed from localhost to IP
+  host: "",
   user: "root",
   password: "",
   database: "farmprecise",
   connectionLimit: 10,
-  port: 3306
 });
 
 // Helper function to promisify database queries
@@ -338,5 +337,5 @@ app.get("/croprecommendation", (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server is running on 10.83.211.100:${port}`);
+  console.log(`Server is running on 10.83.211.65:${port}`);
 });

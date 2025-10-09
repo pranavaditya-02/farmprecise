@@ -343,7 +343,21 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         child: FloatingActionButton(
-          onPressed: _openChatbot,
+          onPressed: () {
+            // Add try-catch for better error handling
+            try {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => FarmingChatbot()),
+              );
+            } catch (e) {
+              print('Navigation error: $e');
+              // Show error to user
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Could not open chat: $e')),
+              );
+            }
+          },
           backgroundColor: Colors.transparent,
           elevation: 0,
           child: Container(

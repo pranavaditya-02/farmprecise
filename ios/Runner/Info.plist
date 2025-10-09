@@ -45,5 +45,15 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Speech recognition is used to enable voice chat features</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access is needed for voice chat features</string>
+	<key>NSSpeechSynthesisUsageDescription</key>
+	<string>Speech synthesis is used to read chat responses</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is required to capture images of crops for disease detection</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Photo library access is required to select crop images for disease detection</string>
 </dict>
 </plist>
