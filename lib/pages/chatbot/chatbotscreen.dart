@@ -717,7 +717,7 @@ Response Guidelines:
    - Use ## for main headings
    - Use ### for subheadings
    - Use **bold** for emphasis
-   - Use * for bullet points
+   - Use * for bullet points 
    - Use numbered lists where appropriate
 
 If location-specific information is requested (like Sathyamangalam), acknowledge the locality and provide relevant regional farming insights.

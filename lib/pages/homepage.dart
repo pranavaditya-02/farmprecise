@@ -79,7 +79,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> fetchWeatherData() async {
     final response = await http.get(Uri.parse(
-        'http://api.weatherapi.com/v1/current.json?key=2a78e81f9890453aaf4122524252301&q=18.9265,72.8312'));
+        'http://api.weatherapi.com/v1/current.json?key=2a78e81f9890453aaf4122524252301&q=12.8699,80.2184'));
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -288,39 +288,39 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               children: [
                 _buildFieldCard(
-                  'Asparagus',
-                  'Harvest on Oct 5, 2022',
-                  'Normal',
-                  '6.6 cm',
-                  'https://idsb.tmgrup.com.tr/ly/uploads/images/2021/08/03/133396.jpeg',
+                  'Paddy (Rice)',
+                  'Harvest on Nov 10, 2025',
+                  'Maturing',
+                  '110 cm',
+                  'https://safalseeds.in/public/images/paddy-seeds.jpg',
                 ),
                 _buildFieldCard(
-                  'Tomato',
-                  'Harvest on Nov 12, 2022',
-                  'Need more',
-                  '7.7 cm',
-                  'https://blog.lexmed.com/images/librariesprovider80/blog-post-featured-images/shutterstock_1896755260.jpg?sfvrsn=52546e0a_0',
+                  'Maize',
+                  'Harvest on Dec 05, 2025',
+                  'Ready',
+                  '220 cm',
+                  'https://media.istockphoto.com/id/1485792634/photo/ripe-yellow-corn-cob-on-the-field.jpg?s=612x612&w=0&k=20&c=5Lhbh5a15DNMdyaxBPGR4XAIjTPXz1Ct52i2WcoVOQs=',
                 ),
                 _buildFieldCard(
-                  'Carrot',
-                  'Harvest on Dec 15, 2022',
-                  'Normal',
-                  '8.2 cm',
-                  'https://strapi.myplantin.com/Depositphotos_118413036_L_min_0123b119ba.webp',
+                  'Turmeric',
+                  'Harvest on Jan 20, 2026',
+                  'Harvest soon',
+                  '90 cm',
+                  'https://media.istockphoto.com/id/954270512/photo/turmeric-root-herb-plant.jpg?s=612x612&w=0&k=20&c=vccQL2B2NTOBzBkfP6oIx_jkD8WOVDWrYU57cjNJfOE=',
                 ),
                 _buildFieldCard(
-                  'Lettuce',
-                  'Harvest on Jan 20, 2023',
+                  'Groundnut',
+                  'Harvest on Oct 30, 2025',
                   'Good',
-                  '10.5 cm',
-                  'https://www.allthatgrows.in/cdn/shop/articles/Feat_Image-Lettuce_1024x1024.jpg?v=1565168838',
+                  '45 cm',
+                  'https://www.protectourlivelihood.in/wp-content/uploads/2025/04/Image-Groundnut.jpg',
                 ),
                 _buildFieldCard(
-                  'Cucumber',
-                  'Harvest on Feb 25, 2023',
-                  'Excellent',
-                  '12.0 cm',
-                  'https://www.highmowingseeds.com/media/catalog/product/cache/6cbdb003cf4aae33b9be8e6a6cf3d7ad/2/4/2452-0_2.jpg',
+                  'Banana',
+                  'Harvest on Mar 15, 2026',
+                  'Fruit set',
+                  '250 cm',
+                  'https://cdn4.volusion.store/uyqbk-sezkn/v/vspfiles/photos/FRUBAN-FRU-S-TX-STAR-2.jpg?v-cache=1729145494',
                 ),
               ],
             ),
